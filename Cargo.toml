@@ -38,3 +38,7 @@ codegen-units = 1
 [profile.native-release]
 inherits = "release"
 lto = true
+
+[features]
+default = []
+release = []
