@@ -139,14 +139,14 @@ jobs:
           files: wasm-release
           dest: ${{ env.binary }}.${{ env.extension }}
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.${{ env.extension }}
-          asset_name: ${{ env.binary }}-${{ matrix.target.channel }}-${{ steps.get_version.outputs.tag }}.${{ env.extension }}
-          tag: ${{ github.ref }}
-          overwrite: true
+      # - name: Upload binaries to release
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: ${{ env.binary }}.${{ env.extension }}
+      #     asset_name: ${{ env.binary }}-${{ matrix.target.channel }}-${{ steps.get_version.outputs.tag }}.${{ env.extension }}
+      #     tag: ${{ github.ref }}
+      #     overwrite: true
 
       - name: save artifact
         uses: actions/upload-artifact@v1
