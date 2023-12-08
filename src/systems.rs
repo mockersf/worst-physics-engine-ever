@@ -103,11 +103,11 @@ pub fn spawn_wall_aabb(
                 half_extents: Vec3A::new(8., 8., 0.) * 0.95,
             },
             AabbGizmo {
-                color: Some(
-                    if enabled
-                        .coords
-                        .contains(gridcoords) { Color::GREEN } else { Color::GRAY },
-                ),
+                color: Some(if enabled.coords.contains(gridcoords) {
+                    Color::GREEN
+                } else {
+                    Color::GRAY
+                }),
             },
             PickableBundle::default(),
             ColliderStatus {
