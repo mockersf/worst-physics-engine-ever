@@ -68,12 +68,10 @@ pub fn movement(
             if velocity.linvel.y != 0.0 {
                 atlas.index = ((time.elapsed_seconds() * 5.0).floor() as usize) % 4 + 14;
             }
-        } else {
-            if velocity.linvel.y > 10.0 {
-                atlas.index = 35;
-            } else if velocity.linvel.y < -10.0 {
-                atlas.index = 36;
-            }
+        } else if velocity.linvel.y > 10.0 {
+            atlas.index = 35;
+        } else if velocity.linvel.y < -10.0 {
+            atlas.index = 36;
         }
 
         if input.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing) {
@@ -106,11 +104,9 @@ pub fn spawn_wall_aabb(
             },
             AabbGizmo {
                 color: Some(
-                    enabled
+                    if enabled
                         .coords
-                        .contains(gridcoords)
-                        .then(|| Color::GREEN)
-                        .unwrap_or(Color::GRAY),
+                        .contains(gridcoords) { Color::GREEN } else { Color::GRAY },
                 ),
             },
             PickableBundle::default(),
