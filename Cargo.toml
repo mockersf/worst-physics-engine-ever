@@ -1,0 +1,40 @@
+[package]
+name = "worst-physics-engine-ever"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { version = "0.12", default-features = false, features = [
+    "png",
+    "bevy_winit",
+] }
+bevy_ecs_ldtk = { version = "0.8", git = "https://github.com/trouv/bevy_ecs_ldtk", branch = "feat/bevy-0.12" }
+bevy_rapier2d = { version = "0.23" }
+bevy_embedded_assets = "0.9.1"
+bevy_mod_picking = { version = "0.17", default-features = false }
+
+[patch.crates-io]
+bevy_ecs_tilemap = { git = "https://github.com/divark/bevy_ecs_tilemap", branch = "0.12-fixes" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+bevy = { version = "0.12", features = ["x11"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+bevy = { version = "0.12", features = ["webgl2"] }
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+
+[profile.native-release]
+inherits = "release"
+lto = true
