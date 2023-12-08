@@ -11,6 +11,9 @@ use std::collections::{HashMap, HashSet};
 
 use bevy_rapier2d::prelude::*;
 
+#[derive(Resource)]
+pub struct FontHandle(Handle<Font>);
+
 pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let camera = Camera2dBundle::default();
     commands.spawn(camera);
@@ -20,6 +23,20 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         ldtk_handle,
         ..Default::default()
     });
+
+    let font = asset_server.load("PublicPixel-z84yD.ttf");
+    commands.insert_resource(FontHandle(font));
+}
+
+pub fn set_default_font(
+    mut commands: Commands,
+    mut fonts: ResMut<Assets<Font>>,
+    font_handle: Res<FontHandle>,
+) {
+    if let Some(font) = fonts.remove(&font_handle.0) {
+        fonts.insert(TextStyle::default().font, font);
+        commands.remove_resource::<FontHandle>();
+    }
 }
 
 pub fn movement(
@@ -321,10 +338,13 @@ pub fn spawn_complete_wall_collision(
     }
 }
 
-pub fn detect_climb_range(
+pub fn detect_collision_with_environment(
     mut climbers: Query<&mut Climber>,
     climbables: Query<Entity, With<Climbable>>,
     mut collisions: EventReader<CollisionEvent>,
+    player: Query<&Player>,
+    chests: Query<&Chest>,
+    mut next_state: ResMut<NextState<GameMode>>,
 ) {
     for collision in collisions.read() {
         match collision {
@@ -339,6 +359,11 @@ pub fn detect_climb_range(
                 {
                     climber.intersecting_climbables.insert(climbable);
                 };
+                if (player.contains(*collider_a) && chests.contains(*collider_b))
+                    || (player.contains(*collider_b) && chests.contains(*collider_a))
+                {
+                    next_state.set(GameMode::Won);
+                }
             }
             CollisionEvent::Stopped(collider_a, collider_b, _) => {
                 if let (Ok(mut climber), Ok(climbable)) =
@@ -588,7 +613,6 @@ pub fn restart_level(
     input: Res<Input<KeyCode>>,
     mut next: ResMut<NextState<GameMode>>,
     state: Res<State<GameMode>>,
-    mut rapier_config: ResMut<RapierConfiguration>,
 ) {
     if input.just_pressed(KeyCode::R) {
         for world_entity in &world_query {
@@ -596,15 +620,32 @@ pub fn restart_level(
         }
     }
     if input.just_pressed(KeyCode::M) {
-        for world_entity in &world_query {
-            commands.entity(world_entity).insert(Respawn);
-        }
         if state.get() == &GameMode::Play {
             next.set(GameMode::Edit);
-            rapier_config.gravity = Vec2::new(0.0, 0.0);
         } else {
             next.set(GameMode::Play);
-            rapier_config.gravity = Vec2::new(0.0, -2000.0);
         }
     }
+}
+
+pub fn setup_edit_mode(
+    mut commands: Commands,
+    world_query: Query<Entity, With<Handle<LdtkProject>>>,
+    mut rapier_config: ResMut<RapierConfiguration>,
+) {
+    for world_entity in &world_query {
+        commands.entity(world_entity).insert(Respawn);
+    }
+    rapier_config.gravity = Vec2::new(0.0, 0.0);
+}
+
+pub fn setup_play_mode(
+    mut commands: Commands,
+    world_query: Query<Entity, With<Handle<LdtkProject>>>,
+    mut rapier_config: ResMut<RapierConfiguration>,
+) {
+    for world_entity in &world_query {
+        commands.entity(world_entity).insert(Respawn);
+    }
+    rapier_config.gravity = Vec2::new(0.0, -2000.0);
 }

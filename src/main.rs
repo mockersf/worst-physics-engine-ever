@@ -13,6 +13,7 @@ use systems::EnabledColliders;
 mod aabb_picking_backend;
 mod components;
 mod systems;
+mod won;
 
 fn main() {
     App::new()
@@ -46,12 +47,17 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(EnabledColliders::default())
+        .add_plugins(won::WonPlugin)
         .add_systems(Startup, systems::setup)
+        .add_systems(
+            Update,
+            systems::set_default_font.run_if(resource_exists::<systems::FontHandle>()),
+        )
         .add_systems(
             Update,
             (
                 systems::ignore_gravity_if_climbing,
-                systems::detect_climb_range,
+                systems::detect_collision_with_environment,
                 systems::movement,
                 systems::patrol,
                 systems::ground_detection,
@@ -74,6 +80,8 @@ fn main() {
             )
                 .run_if(in_state(GameMode::Edit)),
         )
+        .add_systems(OnEnter(GameMode::Edit), systems::setup_edit_mode)
+        .add_systems(OnEnter(GameMode::Play), systems::setup_play_mode)
         .add_systems(Update, systems::restart_level)
         .register_ldtk_int_cell::<components::WallBundle>(1)
         .register_ldtk_int_cell::<components::LadderBundle>(2)
@@ -91,4 +99,5 @@ enum GameMode {
     #[default]
     Edit,
     Play,
+    Won,
 }

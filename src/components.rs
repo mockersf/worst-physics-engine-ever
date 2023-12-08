@@ -14,6 +14,7 @@ pub struct ColliderBundle {
     pub gravity_scale: GravityScale,
     pub friction: Friction,
     pub density: ColliderMassProperties,
+    pub active_events: ActiveEvents,
 }
 
 #[derive(Clone, Default, Bundle, LdtkIntCell)]
@@ -52,6 +53,7 @@ impl From<&EntityInstance> for ColliderBundle {
                 gravity_scale: GravityScale(1.0),
                 friction: Friction::new(0.5),
                 density: ColliderMassProperties::Density(15.0),
+                active_events: ActiveEvents::COLLISION_EVENTS,
                 ..Default::default()
             },
             _ => ColliderBundle::default(),
@@ -209,12 +211,16 @@ pub struct MobBundle {
     pub patrol: Patrol,
 }
 
+#[derive(Component, Clone, Default)]
+pub struct Chest;
+
 #[derive(Clone, Default, Bundle, LdtkEntity)]
 pub struct ChestBundle {
     #[sprite_sheet_bundle]
     pub sprite_sheet_bundle: SpriteSheetBundle,
     #[from_entity_instance]
     pub collider_bundle: ColliderBundle,
+    pub chest: Chest,
 }
 
 #[derive(Clone, Default, Bundle, LdtkEntity)]
