@@ -118,7 +118,7 @@ fn level_1() -> (LevelInfo, LevelSelection) {
     return (
         LevelInfo {
             start_colliders: vec![GridCoords::new(5, 5), GridCoords::new(30, 5)],
-            max_colliders: 15,
+            max_colliders: 20,
         },
         LevelSelection::Uid(0),
     );
