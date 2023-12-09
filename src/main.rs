@@ -29,6 +29,7 @@ fn main() {
                     primary_window: Some(Window {
                         title: "Worst Physics Engine Ever".to_string(),
                         resolution: WindowResolution::new(1152.0, 640.0),
+                        fit_canvas_to_parent: true,
                         ..default()
                     }),
                     ..default()
@@ -56,10 +57,6 @@ fn main() {
             play::PlayPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            set_default_font.run_if(resource_exists::<FontHandle>()),
-        )
         .register_ldtk_int_cell::<components::WallBundle>(1)
         .register_ldtk_int_cell::<components::LadderBundle>(2)
         .register_ldtk_int_cell::<components::WallBundle>(3)
@@ -100,15 +97,4 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let font = asset_server.load("PublicPixel-z84yD.ttf");
     commands.insert_resource(FontHandle(font));
-}
-
-pub fn set_default_font(
-    mut commands: Commands,
-    mut fonts: ResMut<Assets<Font>>,
-    font_handle: Res<FontHandle>,
-) {
-    if let Some(font) = fonts.remove(&font_handle.0) {
-        fonts.insert(TextStyle::default().font, font);
-        commands.remove_resource::<FontHandle>();
-    }
 }

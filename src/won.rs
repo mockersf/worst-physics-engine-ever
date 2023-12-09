@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    edit::EnabledColliders, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    edit::EnabledColliders, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
+    TEXT_COLOR,
 };
 
 pub struct WonPlugin;
@@ -23,7 +24,7 @@ fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnWonScreen>>) 
     }
 }
 
-fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
+fn setup(mut commands: Commands, colliders: Res<EnabledColliders>, font: Res<FontHandle>) {
     // Common style for all buttons on the screen
     let button_style = Style {
         width: Val::Px(250.0),
@@ -36,7 +37,7 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
     let button_text_style = TextStyle {
         font_size: 30.0,
         color: TEXT_COLOR,
-        ..default()
+        font: font.0.clone(),
     };
 
     commands
@@ -62,7 +63,7 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
                     TextStyle {
                         font_size: 80.0,
                         color: TEXT_COLOR,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 )
                 .with_style(Style {
@@ -76,7 +77,7 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
                     TextStyle {
                         font_size: 40.0,
                         color: TEXT_COLOR,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 )
                 .with_style(Style {

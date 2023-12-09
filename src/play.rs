@@ -1,6 +1,6 @@
 use crate::{
-    components::*, edit::EnabledColliders, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
-    TEXT_COLOR,
+    components::*, edit::EnabledColliders, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON,
+    PRESSED_BUTTON, TEXT_COLOR,
 };
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -523,6 +523,7 @@ fn setup_play_mode(
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
     mut rapier_config: ResMut<RapierConfiguration>,
     colliders: Res<EnabledColliders>,
+    font: Res<FontHandle>,
 ) {
     let button_style = Style {
         width: Val::Px(150.0),
@@ -535,7 +536,7 @@ fn setup_play_mode(
     let button_text_style = TextStyle {
         font_size: 20.0,
         color: TEXT_COLOR,
-        ..default()
+        font: font.0.clone(),
     };
 
     for world_entity in &world_query {
@@ -577,7 +578,7 @@ fn setup_play_mode(
                         style: TextStyle {
                             font_size: 20.,
                             color: TEXT_COLOR,
-                            ..default()
+                            font: font.0.clone(),
                         },
                     },
                     TextSection {
@@ -585,7 +586,7 @@ fn setup_play_mode(
                         style: TextStyle {
                             font_size: 20.,
                             color: TEXT_COLOR,
-                            ..default()
+                            font: font.0.clone(),
                         },
                     },
                 ])
@@ -600,7 +601,7 @@ fn setup_play_mode(
                     style: TextStyle {
                         font_size: 20.,
                         color: Color::GREEN,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 },
                 TextSection {
@@ -608,7 +609,7 @@ fn setup_play_mode(
                     style: TextStyle {
                         font_size: 20.,
                         color: TEXT_COLOR,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 },
             ]));

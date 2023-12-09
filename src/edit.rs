@@ -8,7 +8,8 @@ use bevy_mod_picking::{
 use bevy_rapier2d::plugin::RapierConfiguration;
 
 use crate::{
-    components::Wall, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    components::Wall, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
+    TEXT_COLOR,
 };
 
 pub struct EditPlugin;
@@ -44,6 +45,7 @@ fn setup_edit_mode(
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
     mut rapier_config: ResMut<RapierConfiguration>,
     colliders: Res<EnabledColliders>,
+    font: Res<FontHandle>,
 ) {
     let button_style = Style {
         width: Val::Px(150.0),
@@ -56,7 +58,7 @@ fn setup_edit_mode(
     let button_text_style = TextStyle {
         font_size: 20.0,
         color: TEXT_COLOR,
-        ..default()
+        font: font.0.clone(),
     };
 
     for world_entity in &world_query {
@@ -96,7 +98,8 @@ fn setup_edit_mode(
                     value: colliders.coords.len().to_string(),
                     style: TextStyle {
                         font_size: 20.,
-                        ..default()
+                        color: TEXT_COLOR,
+                        font: font.0.clone(),
                     },
                 },
                 TextSection {
@@ -104,7 +107,7 @@ fn setup_edit_mode(
                     style: TextStyle {
                         font_size: 20.,
                         color: TEXT_COLOR,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 },
             ]));

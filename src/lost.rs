@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    play::Playthrough, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    play::Playthrough, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
+    TEXT_COLOR,
 };
 
 pub struct LostPlugin;
@@ -23,7 +24,7 @@ fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnLostScreen>>)
     }
 }
 
-fn setup(mut commands: Commands, playthrough: Res<Playthrough>) {
+fn setup(mut commands: Commands, playthrough: Res<Playthrough>, font: Res<FontHandle>) {
     // Common style for all buttons on the screen
     let button_style = Style {
         width: Val::Px(250.0),
@@ -36,7 +37,7 @@ fn setup(mut commands: Commands, playthrough: Res<Playthrough>) {
     let button_text_style = TextStyle {
         font_size: 30.0,
         color: TEXT_COLOR,
-        ..default()
+        font: font.0.clone(),
     };
 
     commands
@@ -62,7 +63,7 @@ fn setup(mut commands: Commands, playthrough: Res<Playthrough>) {
                     TextStyle {
                         font_size: 60.0,
                         color: TEXT_COLOR,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 )
                 .with_style(Style {
@@ -82,7 +83,7 @@ fn setup(mut commands: Commands, playthrough: Res<Playthrough>) {
                     TextStyle {
                         font_size: 30.0,
                         color: TEXT_COLOR,
-                        ..default()
+                        font: font.0.clone(),
                     },
                 )
                 .with_text_alignment(TextAlignment::Center)
