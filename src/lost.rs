@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ecs_ldtk::assets::LdtkProject;
 
 use crate::{
     play::Playthrough, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
@@ -159,11 +160,13 @@ enum ButtonAction {
 
 #[allow(clippy::type_complexity)]
 fn button_system(
+    mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &ButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMode>>,
+    world_query: Query<Entity, With<Handle<LdtkProject>>>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
@@ -171,7 +174,10 @@ fn button_system(
                 match button {
                     ButtonAction::Edit => next_state.set(GameMode::Edit),
                     ButtonAction::Retry => next_state.set(GameMode::Play),
-                    ButtonAction::Menu => (),
+                    ButtonAction::Menu => {
+                        commands.entity(world_query.single()).despawn_recursive();
+                        next_state.set(GameMode::Menu);
+                    }
                 }
                 PRESSED_BUTTON.into()
             }

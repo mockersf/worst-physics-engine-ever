@@ -30,7 +30,10 @@ impl Plugin for PlayPlugin {
             )
                 .run_if(in_state(GameMode::Play)),
         )
-        .add_systems(Update, camera_fit_inside_current_level)
+        .add_systems(
+            Update,
+            camera_fit_inside_current_level.run_if(in_state(GameMode::Play)),
+        )
         .add_systems(
             Update,
             spawn_complete_wall_collision.run_if(in_state(GameMode::Play)),
@@ -354,7 +357,7 @@ fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
 const ASPECT_RATIO: f32 = 16. / 9.;
 
 #[allow(clippy::type_complexity)]
-fn camera_fit_inside_current_level(
+pub fn camera_fit_inside_current_level(
     mut camera_query: Query<
         (
             &mut bevy::render::camera::OrthographicProjection,

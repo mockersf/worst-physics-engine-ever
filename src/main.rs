@@ -8,12 +8,12 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_rapier2d::prelude::*;
-use edit::EnabledColliders;
 
 mod aabb_picking_backend;
 mod components;
 mod edit;
 mod lost;
+mod menu;
 mod play;
 mod won;
 
@@ -45,16 +45,15 @@ fn main() {
             gravity: Vec2::new(0.0, 0.0),
             ..Default::default()
         })
-        .insert_resource(LevelSelection::Uid(0))
         .insert_resource(LdtkSettings {
             ..Default::default()
         })
-        .insert_resource(EnabledColliders::default())
         .add_plugins((
             won::WonPlugin,
             lost::LostPlugin,
             edit::EditPlugin,
             play::PlayPlugin,
+            menu::MenuPlugin,
         ))
         .add_systems(Startup, setup)
         .register_ldtk_int_cell::<components::WallBundle>(1)
@@ -71,6 +70,7 @@ fn main() {
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone, Copy)]
 enum GameMode {
     #[default]
+    Menu,
     Edit,
     Play,
     Won,
@@ -85,15 +85,15 @@ const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 #[derive(Resource)]
 pub struct FontHandle(Handle<Font>);
 
+#[derive(Resource)]
+pub struct LdtkHandle(Handle<LdtkProject>);
+
 pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let camera = Camera2dBundle::default();
     commands.spawn(camera);
 
-    let ldtk_handle = asset_server.load("Typical_2D_platformer_example.ldtk");
-    commands.spawn(LdtkWorldBundle {
-        ldtk_handle,
-        ..Default::default()
-    });
+    let world = asset_server.load("Typical_2D_platformer_example.ldtk");
+    commands.insert_resource(LdtkHandle(world));
 
     let font = asset_server.load("PublicPixel-z84yD.ttf");
     commands.insert_resource(FontHandle(font));
