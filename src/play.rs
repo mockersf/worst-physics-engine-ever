@@ -27,16 +27,10 @@ impl Plugin for PlayPlugin {
                 update_level_selection,
                 spawn_ground_sensor,
                 button_system,
+                camera_fit_inside_current_level,
+                spawn_complete_wall_collision,
             )
                 .run_if(in_state(GameMode::Play)),
-        )
-        .add_systems(
-            Update,
-            camera_fit_inside_current_level.run_if(in_state(GameMode::Play)),
-        )
-        .add_systems(
-            Update,
-            spawn_complete_wall_collision.run_if(in_state(GameMode::Play)),
         )
         .add_systems(OnEnter(GameMode::Play), setup_play_mode)
         .add_systems(OnExit(GameMode::Play), exit_mode)

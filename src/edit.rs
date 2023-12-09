@@ -23,12 +23,9 @@ impl Plugin for EditPlugin {
                 set_color_based_on_enabled,
                 update_collider_count,
                 button_system,
+                crate::play::camera_fit_inside_current_level,
             )
                 .run_if(in_state(GameMode::Edit)),
-        )
-        .add_systems(
-            Update,
-            crate::play::camera_fit_inside_current_level.run_if(in_state(GameMode::Edit)),
         )
         .add_systems(OnEnter(GameMode::Edit), setup_edit_mode)
         .add_systems(OnExit(GameMode::Edit), exit_mode);
