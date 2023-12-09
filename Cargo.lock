@@ -4214,7 +4214,7 @@ dependencies = [
 
 [[package]]
 name = "worst-physics-engine-ever"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bevy",
  "bevy_ecs_ldtk",
