@@ -8,8 +8,8 @@ use bevy_mod_picking::{
 use bevy_rapier2d::plugin::RapierConfiguration;
 
 use crate::{
-    components::Wall, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
-    TEXT_COLOR,
+    components::Wall, FontHandle, GameMode, LevelInfo, HOVERED_BUTTON, NORMAL_BUTTON,
+    PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct EditPlugin;
@@ -47,6 +47,7 @@ fn setup_edit_mode(
     mut rapier_config: ResMut<RapierConfiguration>,
     colliders: Res<EnabledColliders>,
     font: Res<FontHandle>,
+    level_info: Res<LevelInfo>,
 ) {
     let button_style = Style {
         width: Val::Px(150.0),
@@ -96,30 +97,51 @@ fn setup_edit_mode(
                     parent.spawn(TextBundle::from_section("Play", button_text_style.clone()));
                 });
 
-            parent.spawn(TextBundle::from_sections([
-                TextSection {
-                    value: colliders.coords.len().to_string(),
-                    style: TextStyle {
-                        font_size: 20.,
-                        color: TEXT_COLOR,
-                        font: font.0.clone(),
+            parent.spawn(
+                TextBundle::from_sections([
+                    TextSection {
+                        value: colliders.coords.len().to_string(),
+                        style: TextStyle {
+                            font_size: 20.,
+                            color: TEXT_COLOR,
+                            font: font.0.clone(),
+                        },
                     },
-                },
-                TextSection {
-                    value: " colliders".to_string(),
-                    style: TextStyle {
-                        font_size: 20.,
-                        color: TEXT_COLOR,
-                        font: font.0.clone(),
+                    TextSection {
+                        value: format!(" colliders (max {})", level_info.max_colliders),
+                        style: TextStyle {
+                            font_size: 20.,
+                            color: TEXT_COLOR,
+                            font: font.0.clone(),
+                        },
                     },
-                },
-            ]));
+                ])
+                .with_style(Style {
+                    margin: UiRect::bottom(Val::Px(10.0)),
+                    ..default()
+                }),
+            );
+
+            parent
+                .spawn((
+                    ButtonBundle {
+                        style: button_style.clone(),
+                        background_color: NORMAL_BUTTON.into(),
+                        border_color: BorderColor(HOVERED_BUTTON),
+                        ..default()
+                    },
+                    ButtonAction::Reset,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section("Reset", button_text_style.clone()));
+                });
         });
 }
 
 #[derive(Component)]
 enum ButtonAction {
     Play,
+    Reset,
 }
 
 #[derive(Component)]
@@ -174,14 +196,19 @@ fn spawn_wall_aabb(
 }
 
 fn set_color_based_on_enabled(
-    mut query: Query<(Ref<ColliderStatus>, &mut AabbGizmo, &GridCoords)>,
+    mut query: Query<(&mut ColliderStatus, &mut AabbGizmo, &GridCoords)>,
     mut enabled: ResMut<EnabledColliders>,
+    level_info: Res<LevelInfo>,
 ) {
-    for (collider_status, mut gizmo, gridcoords) in &mut query {
+    for (mut collider_status, mut gizmo, gridcoords) in &mut query {
         if collider_status.is_changed() && !collider_status.is_added() {
             if collider_status.enabled {
-                gizmo.color = Some(Color::GREEN);
-                enabled.coords.insert(*gridcoords);
+                if enabled.coords.len() >= level_info.max_colliders {
+                    collider_status.enabled = false;
+                } else {
+                    gizmo.color = Some(Color::GREEN);
+                    enabled.coords.insert(*gridcoords);
+                }
             } else {
                 gizmo.color = Some(Color::GRAY);
                 enabled.coords.remove(gridcoords);
@@ -202,17 +229,31 @@ fn update_collider_count(colliders: Res<EnabledColliders>, mut text: Query<&mut 
 
 #[allow(clippy::type_complexity)]
 fn button_system(
+    mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &ButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMode>>,
+    mut enabled: ResMut<EnabledColliders>,
+    level_info: Res<LevelInfo>,
+    world_query: Query<Entity, With<Handle<LdtkProject>>>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
                 match button {
                     ButtonAction::Play => next_state.set(GameMode::Play),
+                    ButtonAction::Reset => {
+                        enabled.coords.clear();
+                        for coord in &level_info.start_colliders {
+                            enabled.coords.insert(coord.clone());
+                        }
+                        next_state.set(GameMode::Edit);
+                        for world_entity in &world_query {
+                            commands.entity(world_entity).insert(Respawn);
+                        }
+                    }
                 }
                 PRESSED_BUTTON.into()
             }

@@ -1,8 +1,8 @@
-use bevy::prelude::*;
-use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
+use bevy::{prelude::*, utils::HashSet};
+use bevy_ecs_ldtk::LdtkWorldBundle;
 
 use crate::{
-    edit::EnabledColliders, FontHandle, GameKind, GameMode, LdtkHandle, HOVERED_BUTTON,
+    edit::EnabledColliders, level_1, FontHandle, GameKind, GameMode, LdtkHandle, HOVERED_BUTTON,
     NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 
@@ -144,16 +144,22 @@ fn button_system(
             Interaction::Pressed => {
                 match button {
                     ButtonAction::Start => {
+                        let level = level_1();
                         match game_kind.get() {
                             GameKind::Platformer => next_state.set(GameMode::Play),
                             GameKind::Puzzle => next_state.set(GameMode::Edit),
                         };
-                        commands.insert_resource(LevelSelection::Uid(0));
+                        let mut coords = HashSet::new();
+                        for starter in &level.0.start_colliders {
+                            coords.insert(starter.clone());
+                        }
+                        commands.insert_resource(EnabledColliders { coords });
+                        commands.insert_resource(level.1);
+                        commands.insert_resource(level.0);
                         commands.spawn(LdtkWorldBundle {
                             ldtk_handle: world.0.clone(),
                             ..Default::default()
                         });
-                        commands.insert_resource(EnabledColliders::default());
                     }
                 }
                 PRESSED_BUTTON.into()

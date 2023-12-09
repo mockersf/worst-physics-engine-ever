@@ -107,3 +107,19 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("PublicPixel-z84yD.ttf");
     commands.insert_resource(FontHandle(font));
 }
+
+#[derive(Resource)]
+pub struct LevelInfo {
+    pub start_colliders: Vec<GridCoords>,
+    pub max_colliders: usize,
+}
+
+fn level_1() -> (LevelInfo, LevelSelection) {
+    return (
+        LevelInfo {
+            start_colliders: vec![GridCoords::new(5, 5), GridCoords::new(30, 5)],
+            max_colliders: 15,
+        },
+        LevelSelection::Uid(0),
+    );
+}
