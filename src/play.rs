@@ -570,16 +570,41 @@ fn setup_play_mode(
                     parent.spawn(TextBundle::from_section("Edit", button_text_style.clone()));
                 });
 
+            parent.spawn(
+                TextBundle::from_sections([
+                    TextSection {
+                        value: colliders.coords.len().to_string(),
+                        style: TextStyle {
+                            font_size: 20.,
+                            color: TEXT_COLOR,
+                            ..default()
+                        },
+                    },
+                    TextSection {
+                        value: " colliders".to_string(),
+                        style: TextStyle {
+                            font_size: 20.,
+                            color: TEXT_COLOR,
+                            ..default()
+                        },
+                    },
+                ])
+                .with_style(Style {
+                    margin: UiRect::bottom(Val::Px(10.0)),
+                    ..default()
+                }),
+            );
             parent.spawn(TextBundle::from_sections([
                 TextSection {
-                    value: colliders.coords.len().to_string(),
+                    value: "120.0".to_string(),
                     style: TextStyle {
                         font_size: 20.,
+                        color: Color::GREEN,
                         ..default()
                     },
                 },
                 TextSection {
-                    value: " colliders".to_string(),
+                    value: "s".to_string(),
                     style: TextStyle {
                         font_size: 20.,
                         color: TEXT_COLOR,
@@ -588,6 +613,19 @@ fn setup_play_mode(
                 },
             ]));
         });
+
+    commands.insert_resource(Playthrough {
+        timer: Timer::from_seconds(120.0, TimerMode::Once),
+        lost_chest: false,
+        lost_player: false,
+    });
+}
+
+#[derive(Resource)]
+pub struct Playthrough {
+    pub timer: Timer,
+    pub lost_player: bool,
+    pub lost_chest: bool,
 }
 
 #[derive(Component)]
@@ -600,6 +638,9 @@ fn check_lost_condition(
     chest: Query<&Transform, With<Chest>>,
     player: Query<&Transform, With<Player>>,
     respawn: Query<&Respawn>,
+    time: Res<Time>,
+    mut playthrough: ResMut<Playthrough>,
+    mut text: Query<&mut Text>,
 ) {
     if respawn.iter().count() > 0 {
         return;
@@ -607,10 +648,23 @@ fn check_lost_condition(
     let transform = chest.single();
     if transform.translation.y < -500. {
         next.set(GameMode::Lost);
+        playthrough.lost_chest = true;
     }
     let transform = player.single();
     if transform.translation.y < -500. {
         next.set(GameMode::Lost);
+        playthrough.lost_player = true;
+    }
+    if playthrough.timer.tick(time.delta()).just_finished() {
+        next.set(GameMode::Lost);
+    }
+    for mut text in &mut text {
+        if text.sections[0].style.color != TEXT_COLOR {
+            text.sections[0].value = format!("{:.1}", playthrough.timer.remaining_secs());
+            if playthrough.timer.remaining_secs() < 30.0 {
+                text.sections[0].style.color = Color::RED;
+            }
+        }
     }
 }
 
