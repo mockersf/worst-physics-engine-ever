@@ -53,6 +53,7 @@ fn setup_edit_mode(
         margin: UiRect::bottom(Val::Px(10.0)),
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
+        border: UiRect::all(Val::Px(5.0)),
         ..default()
     };
     let button_text_style = TextStyle {
@@ -85,6 +86,7 @@ fn setup_edit_mode(
                     ButtonBundle {
                         style: button_style.clone(),
                         background_color: NORMAL_BUTTON.into(),
+                        border_color: BorderColor(HOVERED_BUTTON),
                         ..default()
                     },
                     ButtonAction::Play,
