@@ -14,7 +14,7 @@ mod aabb_picking_backend;
 mod components;
 mod edit;
 mod lost;
-mod systems;
+mod play;
 mod won;
 
 fn main() {
@@ -49,34 +49,17 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(EnabledColliders::default())
-        .add_plugins((won::WonPlugin, lost::LostPlugin, edit::EditPlugin))
-        .add_systems(Startup, systems::setup)
+        .add_plugins((
+            won::WonPlugin,
+            lost::LostPlugin,
+            edit::EditPlugin,
+            play::PlayPlugin,
+        ))
+        .add_systems(Startup, setup)
         .add_systems(
             Update,
-            systems::set_default_font.run_if(resource_exists::<systems::FontHandle>()),
+            set_default_font.run_if(resource_exists::<FontHandle>()),
         )
-        .add_systems(
-            Update,
-            (
-                systems::ignore_gravity_if_climbing,
-                systems::detect_collision_with_environment,
-                systems::movement,
-                systems::patrol,
-                systems::ground_detection,
-                systems::update_on_ground,
-                systems::check_lost_condition,
-            )
-                .run_if(in_state(GameMode::Play)),
-        )
-        .add_systems(Update, systems::camera_fit_inside_current_level)
-        .add_systems(Update, systems::update_level_selection)
-        .add_systems(Update, systems::spawn_ground_sensor)
-        .add_systems(
-            Update,
-            systems::spawn_complete_wall_collision.run_if(in_state(GameMode::Play)),
-        )
-        .add_systems(OnEnter(GameMode::Play), systems::setup_play_mode)
-        .add_systems(Update, systems::restart_level)
         .register_ldtk_int_cell::<components::WallBundle>(1)
         .register_ldtk_int_cell::<components::LadderBundle>(2)
         .register_ldtk_int_cell::<components::WallBundle>(3)
@@ -101,3 +84,31 @@ const TEXT_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+
+#[derive(Resource)]
+pub struct FontHandle(Handle<Font>);
+
+pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let camera = Camera2dBundle::default();
+    commands.spawn(camera);
+
+    let ldtk_handle = asset_server.load("Typical_2D_platformer_example.ldtk");
+    commands.spawn(LdtkWorldBundle {
+        ldtk_handle,
+        ..Default::default()
+    });
+
+    let font = asset_server.load("PublicPixel-z84yD.ttf");
+    commands.insert_resource(FontHandle(font));
+}
+
+pub fn set_default_font(
+    mut commands: Commands,
+    mut fonts: ResMut<Assets<Font>>,
+    font_handle: Res<FontHandle>,
+) {
+    if let Some(font) = fonts.remove(&font_handle.0) {
+        fonts.insert(TextStyle::default().font, font);
+        commands.remove_resource::<FontHandle>();
+    }
+}

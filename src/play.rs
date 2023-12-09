@@ -1,4 +1,7 @@
-use crate::{components::*, edit::EnabledColliders, GameMode};
+use crate::{
+    components::*, edit::EnabledColliders, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
+    TEXT_COLOR,
+};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
@@ -6,35 +9,44 @@ use std::collections::{HashMap, HashSet};
 
 use bevy_rapier2d::prelude::*;
 
-#[derive(Resource)]
-pub struct FontHandle(Handle<Font>);
+pub struct PlayPlugin;
 
-pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let camera = Camera2dBundle::default();
-    commands.spawn(camera);
-
-    let ldtk_handle = asset_server.load("Typical_2D_platformer_example.ldtk");
-    commands.spawn(LdtkWorldBundle {
-        ldtk_handle,
-        ..Default::default()
-    });
-
-    let font = asset_server.load("PublicPixel-z84yD.ttf");
-    commands.insert_resource(FontHandle(font));
-}
-
-pub fn set_default_font(
-    mut commands: Commands,
-    mut fonts: ResMut<Assets<Font>>,
-    font_handle: Res<FontHandle>,
-) {
-    if let Some(font) = fonts.remove(&font_handle.0) {
-        fonts.insert(TextStyle::default().font, font);
-        commands.remove_resource::<FontHandle>();
+impl Plugin for PlayPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                ignore_gravity_if_climbing,
+                detect_collision_with_environment,
+                movement,
+                patrol,
+                ground_detection,
+                update_on_ground,
+                check_lost_condition,
+                spawn_complete_wall_collision,
+                update_level_selection,
+                spawn_ground_sensor,
+                button_system,
+            )
+                .run_if(in_state(GameMode::Play)),
+        )
+        .add_systems(Update, camera_fit_inside_current_level)
+        .add_systems(
+            Update,
+            spawn_complete_wall_collision.run_if(in_state(GameMode::Play)),
+        )
+        .add_systems(OnEnter(GameMode::Play), setup_play_mode)
+        .add_systems(OnExit(GameMode::Play), exit_mode);
     }
 }
 
-pub fn movement(
+fn exit_mode(mut commands: Commands, query: Query<Entity, With<OnPlayMode>>) {
+    for entity in &mut query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn movement(
     input: Res<Input<KeyCode>>,
     mut query: Query<
         (
@@ -93,23 +105,7 @@ pub fn movement(
     }
 }
 
-/// Spawns colliders for the walls of a level
-///
-/// You could just insert a ColliderBundle in to the WallBundle,
-/// but this spawns a different collider for EVERY wall tile.
-/// This approach leads to bad performance.
-///
-/// Instead, by flagging the wall tiles and spawning the collisions later,
-/// we can minimize the amount of colliding entities.
-///
-/// The algorithm used here is a nice compromise between simplicity, speed,
-/// and a small number of rectangle colliders.
-/// In basic terms, it will:
-/// 1. consider where the walls are
-/// 2. combine wall tiles into flat "plates" in each individual row
-/// 3. combine the plates into rectangles across multiple rows wherever possible
-/// 4. spawn colliders for each rectangle
-pub fn spawn_complete_wall_collision(
+fn spawn_complete_wall_collision(
     mut commands: Commands,
     wall_query: Query<(&GridCoords, &Parent), Added<Wall>>,
     parent_query: Query<&Parent, Without<Wall>>,
@@ -118,15 +114,12 @@ pub fn spawn_complete_wall_collision(
     ldtk_project_assets: Res<Assets<LdtkProject>>,
     enabled: Res<EnabledColliders>,
 ) {
-    /// Represents a wide wall that is 1 tile tall
-    /// Used to spawn wall collisions
     #[derive(Clone, Eq, PartialEq, Debug, Default, Hash)]
     struct Plate {
         left: i32,
         right: i32,
     }
 
-    /// A simple rectangle type representing a wall of any size
     struct Rect {
         left: i32,
         right: i32,
@@ -134,19 +127,9 @@ pub fn spawn_complete_wall_collision(
         bottom: i32,
     }
 
-    // Consider where the walls are
-    // storing them as GridCoords in a HashSet for quick, easy lookup
-    //
-    // The key of this map will be the entity of the level the wall belongs to.
-    // This has two consequences in the resulting collision entities:
-    // 1. it forces the walls to be split along level boundaries
-    // 2. it lets us easily add the collision entities as children of the appropriate level entity
     let mut level_to_wall_locations: HashMap<Entity, HashSet<GridCoords>> = HashMap::new();
 
     wall_query.for_each(|(&grid_coords, parent)| {
-        // An intgrid tile's direct parent will be a layer entity, not the level entity
-        // To get the level entity, you need the tile's grandparent.
-        // This is where parent_query comes in.
         if let Ok(grandparent) = parent_query.get(parent.get()) {
             if enabled.coords.contains(&grid_coords) {
                 level_to_wall_locations
@@ -265,7 +248,7 @@ pub fn spawn_complete_wall_collision(
     }
 }
 
-pub fn detect_collision_with_environment(
+fn detect_collision_with_environment(
     mut climbers: Query<&mut Climber>,
     climbables: Query<Entity, With<Climbable>>,
     mut collisions: EventReader<CollisionEvent>,
@@ -309,9 +292,7 @@ pub fn detect_collision_with_environment(
     }
 }
 
-pub fn ignore_gravity_if_climbing(
-    mut query: Query<(&Climber, &mut GravityScale), Changed<Climber>>,
-) {
+fn ignore_gravity_if_climbing(mut query: Query<(&Climber, &mut GravityScale), Changed<Climber>>) {
     for (climber, mut gravity_scale) in &mut query {
         if climber.climbing {
             gravity_scale.0 = 0.0;
@@ -321,7 +302,7 @@ pub fn ignore_gravity_if_climbing(
     }
 }
 
-pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
+fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
     for (mut transform, mut velocity, mut patrol) in &mut query {
         if patrol.points.len() <= 1 {
             continue;
@@ -357,7 +338,7 @@ pub fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
 const ASPECT_RATIO: f32 = 16. / 9.;
 
 #[allow(clippy::type_complexity)]
-pub fn camera_fit_inside_current_level(
+fn camera_fit_inside_current_level(
     mut camera_query: Query<
         (
             &mut bevy::render::camera::OrthographicProjection,
@@ -421,7 +402,7 @@ pub fn camera_fit_inside_current_level(
     }
 }
 
-pub fn update_level_selection(
+fn update_level_selection(
     level_query: Query<(&LevelIid, &Transform), Without<Player>>,
     player_query: Query<&Transform, With<Player>>,
     mut level_selection: ResMut<LevelSelection>,
@@ -458,7 +439,7 @@ pub fn update_level_selection(
     }
 }
 
-pub fn spawn_ground_sensor(
+fn spawn_ground_sensor(
     mut commands: Commands,
     detect_ground_for: Query<(Entity, &Collider), Added<GroundDetection>>,
 ) {
@@ -490,7 +471,7 @@ pub fn spawn_ground_sensor(
     }
 }
 
-pub fn ground_detection(
+fn ground_detection(
     mut ground_sensors: Query<&mut GroundSensor>,
     mut collisions: EventReader<CollisionEvent>,
     collidables: Query<With<Collider>, Without<Sensor>>,
@@ -523,7 +504,7 @@ pub fn ground_detection(
     }
 }
 
-pub fn update_on_ground(
+fn update_on_ground(
     mut ground_detectors: Query<&mut GroundDetection>,
     ground_sensors: Query<&GroundSensor, Changed<GroundSensor>>,
 ) {
@@ -534,39 +515,87 @@ pub fn update_on_ground(
     }
 }
 
-pub fn restart_level(
-    mut commands: Commands,
-    world_query: Query<Entity, With<Handle<LdtkProject>>>,
-    input: Res<Input<KeyCode>>,
-    mut next: ResMut<NextState<GameMode>>,
-    state: Res<State<GameMode>>,
-) {
-    if input.just_pressed(KeyCode::R) {
-        for world_entity in &world_query {
-            commands.entity(world_entity).insert(Respawn);
-        }
-    }
-    if input.just_pressed(KeyCode::M) {
-        if state.get() == &GameMode::Play {
-            next.set(GameMode::Edit);
-        } else {
-            next.set(GameMode::Play);
-        }
-    }
-}
+#[derive(Component)]
+struct OnPlayMode;
 
-pub fn setup_play_mode(
+fn setup_play_mode(
     mut commands: Commands,
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
     mut rapier_config: ResMut<RapierConfiguration>,
+    colliders: Res<EnabledColliders>,
 ) {
+    let button_style = Style {
+        width: Val::Px(150.0),
+        height: Val::Px(50.0),
+        margin: UiRect::bottom(Val::Px(10.0)),
+        justify_content: JustifyContent::Center,
+        align_items: AlignItems::Center,
+        ..default()
+    };
+    let button_text_style = TextStyle {
+        font_size: 20.0,
+        color: TEXT_COLOR,
+        ..default()
+    };
+
     for world_entity in &world_query {
         commands.entity(world_entity).insert(Respawn);
     }
     rapier_config.gravity = Vec2::new(0.0, -2000.0);
+
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                top: Val::Px(12.0),
+                right: Val::Px(12.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::FlexEnd,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(OnPlayMode)
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    ButtonBundle {
+                        style: button_style.clone(),
+                        background_color: NORMAL_BUTTON.into(),
+                        ..default()
+                    },
+                    ButtonAction::Edit,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section("Edit", button_text_style.clone()));
+                });
+
+            parent.spawn(TextBundle::from_sections([
+                TextSection {
+                    value: colliders.coords.len().to_string(),
+                    style: TextStyle {
+                        font_size: 20.,
+                        ..default()
+                    },
+                },
+                TextSection {
+                    value: " colliders".to_string(),
+                    style: TextStyle {
+                        font_size: 20.,
+                        color: TEXT_COLOR,
+                        ..default()
+                    },
+                },
+            ]));
+        });
 }
 
-pub fn check_lost_condition(
+#[derive(Component)]
+enum ButtonAction {
+    Edit,
+}
+
+fn check_lost_condition(
     mut next: ResMut<NextState<GameMode>>,
     chest: Query<&Transform, With<Chest>>,
     player: Query<&Transform, With<Player>>,
@@ -582,5 +611,27 @@ pub fn check_lost_condition(
     let transform = player.single();
     if transform.translation.y < -500. {
         next.set(GameMode::Lost);
+    }
+}
+
+#[allow(clippy::type_complexity)]
+fn button_system(
+    mut interaction_query: Query<
+        (&Interaction, &mut BackgroundColor, &ButtonAction),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut next_state: ResMut<NextState<GameMode>>,
+) {
+    for (interaction, mut color, button) in &mut interaction_query {
+        *color = match *interaction {
+            Interaction::Pressed => {
+                match button {
+                    ButtonAction::Edit => next_state.set(GameMode::Edit),
+                }
+                PRESSED_BUTTON.into()
+            }
+            Interaction::Hovered => HOVERED_BUTTON.into(),
+            Interaction::None => NORMAL_BUTTON.into(),
+        }
     }
 }
