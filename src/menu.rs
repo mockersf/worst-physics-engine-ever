@@ -151,7 +151,7 @@ fn button_system(
                         };
                         let mut coords = HashSet::new();
                         for starter in &level.0.start_colliders {
-                            coords.insert(starter.clone());
+                            coords.insert(*starter);
                         }
                         commands.insert_resource(EnabledColliders { coords });
                         commands.insert_resource(level.1);

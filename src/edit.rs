@@ -266,7 +266,7 @@ fn button_system(
                     ButtonAction::Reset => {
                         enabled.coords.clear();
                         for coord in &level_info.start_colliders {
-                            enabled.coords.insert(coord.clone());
+                            enabled.coords.insert(*coord);
                         }
                         for world_entity in &world_query {
                             commands.entity(world_entity).insert(Respawn);
@@ -275,13 +275,13 @@ fn button_system(
                     ButtonAction::Random => {
                         enabled.coords.clear();
                         for coord in &level_info.start_colliders {
-                            enabled.coords.insert(coord.clone());
+                            enabled.coords.insert(*coord);
                         }
 
                         let mut rng = rand::thread_rng();
                         while enabled.coords.len() < level_info.max_colliders {
                             let sample = wall_query.iter().choose(&mut rng).unwrap();
-                            enabled.coords.insert(sample.clone());
+                            enabled.coords.insert(*sample);
                         }
 
                         for world_entity in &world_query {
