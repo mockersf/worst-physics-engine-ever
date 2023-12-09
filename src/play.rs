@@ -36,13 +36,29 @@ impl Plugin for PlayPlugin {
             spawn_complete_wall_collision.run_if(in_state(GameMode::Play)),
         )
         .add_systems(OnEnter(GameMode::Play), setup_play_mode)
-        .add_systems(OnExit(GameMode::Play), exit_mode);
+        .add_systems(OnExit(GameMode::Play), exit_mode)
+        .add_systems(Update, freeze.run_if(not(in_state(GameMode::Play))));
     }
 }
 
-fn exit_mode(mut commands: Commands, query: Query<Entity, With<OnPlayMode>>) {
+fn exit_mode(
+    mut commands: Commands,
+    query: Query<Entity, With<OnPlayMode>>,
+    mut rapier_config: ResMut<RapierConfiguration>,
+    mut player: Query<&mut Velocity, With<Player>>,
+) {
     for entity in &mut query.iter() {
         commands.entity(entity).despawn_recursive();
+    }
+    rapier_config.gravity = Vec2::new(0.0, 0.0);
+    player.single_mut().linvel = Vec2::ZERO;
+}
+
+fn freeze(mut player: Query<&mut Velocity, With<Player>>) {
+    if let Ok(mut player) = player.get_single_mut() {
+        if player.is_changed() {
+            player.linvel = Vec2::ZERO;
+        }
     }
 }
 

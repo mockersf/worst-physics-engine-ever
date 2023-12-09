@@ -51,8 +51,8 @@ impl From<&EntityInstance> for ColliderBundle {
                 rigid_body: RigidBody::Dynamic,
                 rotation_constraints,
                 gravity_scale: GravityScale(1.0),
-                friction: Friction::new(0.5),
-                density: ColliderMassProperties::Density(15.0),
+                friction: Friction::new(5.0),
+                density: ColliderMassProperties::Density(150.0),
                 active_events: ActiveEvents::COLLISION_EVENTS,
                 ..Default::default()
             },
