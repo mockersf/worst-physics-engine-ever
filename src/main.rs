@@ -8,10 +8,11 @@ use bevy_ecs_ldtk::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_rapier2d::prelude::*;
-use systems::EnabledColliders;
+use edit::EnabledColliders;
 
 mod aabb_picking_backend;
 mod components;
+mod edit;
 mod lost;
 mod systems;
 mod won;
@@ -48,7 +49,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(EnabledColliders::default())
-        .add_plugins((won::WonPlugin, lost::LostPlugin))
+        .add_plugins((won::WonPlugin, lost::LostPlugin, edit::EditPlugin))
         .add_systems(Startup, systems::setup)
         .add_systems(
             Update,
@@ -74,15 +75,6 @@ fn main() {
             Update,
             systems::spawn_complete_wall_collision.run_if(in_state(GameMode::Play)),
         )
-        .add_systems(
-            Update,
-            (
-                systems::spawn_wall_aabb,
-                systems::set_color_based_on_enabled,
-            )
-                .run_if(in_state(GameMode::Edit)),
-        )
-        .add_systems(OnEnter(GameMode::Edit), systems::setup_edit_mode)
         .add_systems(OnEnter(GameMode::Play), systems::setup_play_mode)
         .add_systems(Update, systems::restart_level)
         .register_ldtk_int_cell::<components::WallBundle>(1)
@@ -104,3 +96,8 @@ enum GameMode {
     Won,
     Lost,
 }
+
+const TEXT_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
+const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);

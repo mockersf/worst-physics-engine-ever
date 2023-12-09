@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::{systems::EnabledColliders, GameMode};
+use crate::{
+    edit::EnabledColliders, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+};
 
 pub struct WonPlugin;
 
@@ -11,11 +13,6 @@ impl Plugin for WonPlugin {
             .add_systems(Update, button_system.run_if(in_state(GameMode::Won)));
     }
 }
-
-const TEXT_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 
 #[derive(Component)]
 struct OnWonScreen;

@@ -1,11 +1,6 @@
-use crate::{components::*, GameMode};
-use bevy::{math::Vec3A, prelude::*, render::primitives::Aabb};
+use crate::{components::*, edit::EnabledColliders, GameMode};
+use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
-use bevy_mod_picking::{
-    events::{Click, Out, Over, Pointer},
-    prelude::On,
-    PickableBundle,
-};
 
 use std::collections::{HashMap, HashSet};
 
@@ -94,74 +89,6 @@ pub fn movement(
         if input.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing) {
             velocity.linvel.y = 500.;
             climber.climbing = false;
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct ColliderStatus {
-    enabled: bool,
-}
-
-#[derive(Resource, Default)]
-pub struct EnabledColliders {
-    pub coords: HashSet<GridCoords>,
-}
-
-pub fn spawn_wall_aabb(
-    mut commands: Commands,
-    wall_query: Query<(Entity, &GridCoords), Added<Wall>>,
-    enabled: Res<EnabledColliders>,
-) {
-    wall_query.for_each(|(entity, gridcoords)| {
-        commands.entity(entity).insert((
-            Aabb {
-                center: Vec3A::ZERO,
-                half_extents: Vec3A::new(8., 8., 0.) * 0.95,
-            },
-            AabbGizmo {
-                color: Some(if enabled.coords.contains(gridcoords) {
-                    Color::GREEN
-                } else {
-                    Color::GRAY
-                }),
-            },
-            PickableBundle::default(),
-            ColliderStatus {
-                enabled: enabled.coords.contains(gridcoords),
-            },
-            On::<Pointer<Out>>::target_component_mut::<AabbGizmo>(|_, gizmo| {
-                let color = gizmo.color.unwrap();
-                let mut color = color.as_hsla();
-                color.set_l(0.5);
-                gizmo.color = Some(color.as_rgba());
-            }),
-            On::<Pointer<Over>>::target_component_mut::<AabbGizmo>(|_, gizmo| {
-                let color = gizmo.color.unwrap();
-                let mut color = color.as_hsla();
-                color.set_l(0.9);
-                gizmo.color = Some(color.as_rgba());
-            }),
-            On::<Pointer<Click>>::target_component_mut::<ColliderStatus>(|_, collider| {
-                collider.enabled = !collider.enabled;
-            }),
-        ));
-    });
-}
-
-pub fn set_color_based_on_enabled(
-    mut query: Query<(Ref<ColliderStatus>, &mut AabbGizmo, &GridCoords)>,
-    mut enabled: ResMut<EnabledColliders>,
-) {
-    for (collider_status, mut gizmo, gridcoords) in &mut query {
-        if collider_status.is_changed() && !collider_status.is_added() {
-            if collider_status.enabled {
-                gizmo.color = Some(Color::GREEN);
-                enabled.coords.insert(*gridcoords);
-            } else {
-                gizmo.color = Some(Color::GRAY);
-                enabled.coords.remove(gridcoords);
-            }
         }
     }
 }
@@ -626,17 +553,6 @@ pub fn restart_level(
             next.set(GameMode::Play);
         }
     }
-}
-
-pub fn setup_edit_mode(
-    mut commands: Commands,
-    world_query: Query<Entity, With<Handle<LdtkProject>>>,
-    mut rapier_config: ResMut<RapierConfiguration>,
-) {
-    for world_entity in &world_query {
-        commands.entity(world_entity).insert(Respawn);
-    }
-    rapier_config.gravity = Vec2::new(0.0, 0.0);
 }
 
 pub fn setup_play_mode(
