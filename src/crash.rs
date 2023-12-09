@@ -1,32 +1,61 @@
 use bevy::prelude::*;
-use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
+use bevy_ecs_ldtk::assets::LdtkProject;
 
 use crate::{
-    edit::EnabledColliders, FontHandle, GameKind, GameMode, LdtkHandle, HOVERED_BUTTON,
-    NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    FontHandle, GameKind, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 
-pub struct MenuPlugin;
+pub struct CrashPlugin;
 
-impl Plugin for MenuPlugin {
+impl Plugin for CrashPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameMode::Menu), setup)
-            .add_systems(OnExit(GameMode::Menu), exit_screen)
-            .add_systems(Update, button_system.run_if(in_state(GameMode::Menu)));
+        app.add_systems(
+            Update,
+            crash
+                .run_if(in_state(GameMode::Play))
+                .run_if(in_state(GameKind::Platformer)),
+        )
+        .add_systems(OnEnter(GameMode::Crash), setup)
+        .add_systems(OnExit(GameMode::Crash), exit_screen)
+        .add_systems(Update, button_system.run_if(in_state(GameMode::Crash)));
+    }
+}
+
+fn crash(
+    input: Res<Input<KeyCode>>,
+    time: Res<Time>,
+    mut acc: Local<f32>,
+    mut next_state: ResMut<NextState<GameMode>>,
+    mut next_kind: ResMut<NextState<GameKind>>,
+) {
+    if input.pressed(KeyCode::A) || input.pressed(KeyCode::D) {
+        *acc += time.delta_seconds();
+    }
+    if input.just_pressed(KeyCode::Space) {
+        *acc += 0.5;
+    }
+    if *acc > 1.0 {
+        next_state.set(GameMode::Crash);
+        next_kind.set(GameKind::Puzzle);
     }
 }
 
 #[derive(Component)]
-struct OnMenuScreen;
+struct OnCrashScreen;
 
-fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnMenuScreen>>) {
+fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnCrashScreen>>) {
     for entity in &mut query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
 
-fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<GameKind>>) {
-    commands.insert_resource(ClearColor(Color::BLACK));
+fn setup(
+    mut commands: Commands,
+    font: Res<FontHandle>,
+    world_query: Query<Entity, With<Handle<LdtkProject>>>,
+) {
+    commands.entity(world_query.single()).despawn_recursive();
+    commands.insert_resource(ClearColor(Color::BLUE));
 
     // Common style for all buttons on the screen
     let button_style = Style {
@@ -50,7 +79,7 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
                 style: Style {
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
-                    align_items: AlignItems::Center,
+                    align_items: AlignItems::FlexStart,
                     justify_content: JustifyContent::Center,
                     flex_direction: FlexDirection::Column,
                     ..default()
@@ -58,17 +87,14 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
                 background_color: Color::rgba(0.3, 0.3, 0.3, 0.5).into(),
                 ..default()
             },
-            OnMenuScreen,
+            OnCrashScreen,
         ))
         .with_children(|parent| {
             parent.spawn(
                 TextBundle::from_section(
-                    match game_kind.get() {
-                        GameKind::Platformer => "Super Duper Platformer",
-                        GameKind::Puzzle => "Worst Physics Engine Ever",
-                    },
+                    "Crashed!",
                     TextStyle {
-                        font_size: 70.0,
+                        font_size: 60.0,
                         color: TEXT_COLOR,
                         font: font.0.clone(),
                     },
@@ -76,23 +102,38 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
                 .with_style(Style {
                     margin: UiRect::all(Val::Px(50.0)),
                     ..default()
-                })
-                .with_text_alignment(TextAlignment::Center),
+                }),
             );
             parent.spawn(
                 TextBundle::from_section(
-                    "Let's get those pancakes!",
+                    "Wow, that's a lot of collider entities!",
                     TextStyle {
-                        font_size: 30.0,
+                        font_size: 25.0,
                         color: TEXT_COLOR,
                         font: font.0.clone(),
                     },
                 )
+                .with_text_alignment(TextAlignment::Left)
+                .with_style(Style {
+                    margin: UiRect::left(Val::Px(50.0)),
+                    ..default()
+                }),
+
+            );
+            parent.spawn(
+                TextBundle::from_section(
+                    "Let's be honest, I'm not that good of a physics engine...\nHelp me on this, you'll select where you actually want a collider, and I'll see what I can do.",
+                    TextStyle {
+                        font_size: 25.0,
+                        color: TEXT_COLOR,
+                        font: font.0.clone(),
+                    },
+                )
+                .with_text_alignment(TextAlignment::Left)
                 .with_style(Style {
                     margin: UiRect::all(Val::Px(50.0)),
                     ..default()
-                })
-                .with_text_alignment(TextAlignment::Center),
+                }),
             );
             parent
                 .spawn(NodeBundle {
@@ -111,11 +152,11 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
                                 border_color: BorderColor(HOVERED_BUTTON),
                                 ..default()
                             },
-                            ButtonAction::Start,
+                            ButtonAction::Menu,
                         ))
                         .with_children(|parent| {
                             parent.spawn(TextBundle::from_section(
-                                "Start",
+                                "Ok...",
                                 button_text_style.clone(),
                             ));
                         });
@@ -125,36 +166,22 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
 
 #[derive(Component)]
 enum ButtonAction {
-    Start,
+    Menu,
 }
 
 #[allow(clippy::type_complexity)]
 fn button_system(
-    mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &ButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMode>>,
-    world: Res<LdtkHandle>,
-    game_kind: Res<State<GameKind>>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
                 match button {
-                    ButtonAction::Start => {
-                        match game_kind.get() {
-                            GameKind::Platformer => next_state.set(GameMode::Play),
-                            GameKind::Puzzle => next_state.set(GameMode::Edit),
-                        };
-                        commands.insert_resource(LevelSelection::Uid(0));
-                        commands.spawn(LdtkWorldBundle {
-                            ldtk_handle: world.0.clone(),
-                            ..Default::default()
-                        });
-                        commands.insert_resource(EnabledColliders::default());
-                    }
+                    ButtonAction::Menu => next_state.set(GameMode::Menu),
                 }
                 PRESSED_BUTTON.into()
             }

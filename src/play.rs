@@ -1,6 +1,6 @@
 use crate::{
-    components::*, edit::EnabledColliders, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON,
-    PRESSED_BUTTON, TEXT_COLOR,
+    components::*, edit::EnabledColliders, FontHandle, GameKind, GameMode, HOVERED_BUTTON,
+    NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -118,6 +118,7 @@ fn movement(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn spawn_complete_wall_collision(
     mut commands: Commands,
     wall_query: Query<(&GridCoords, &Parent), Added<Wall>>,
@@ -126,6 +127,7 @@ fn spawn_complete_wall_collision(
     ldtk_projects: Query<&Handle<LdtkProject>>,
     ldtk_project_assets: Res<Assets<LdtkProject>>,
     enabled: Res<EnabledColliders>,
+    game_kind: Res<State<GameKind>>,
 ) {
     #[derive(Clone, Eq, PartialEq, Debug, Default, Hash)]
     struct Plate {
@@ -144,7 +146,9 @@ fn spawn_complete_wall_collision(
 
     wall_query.for_each(|(&grid_coords, parent)| {
         if let Ok(grandparent) = parent_query.get(parent.get()) {
-            if enabled.coords.contains(&grid_coords) {
+            if matches!(game_kind.get(), GameKind::Platformer)
+                || enabled.coords.contains(&grid_coords)
+            {
                 level_to_wall_locations
                     .entry(grandparent.get())
                     .or_default()
@@ -537,6 +541,7 @@ fn setup_play_mode(
     mut rapier_config: ResMut<RapierConfiguration>,
     colliders: Res<EnabledColliders>,
     font: Res<FontHandle>,
+    game_kind: Res<State<GameKind>>,
 ) {
     let button_style = Style {
         width: Val::Px(150.0),
@@ -572,44 +577,46 @@ fn setup_play_mode(
         })
         .insert(OnPlayMode)
         .with_children(|parent| {
-            parent
-                .spawn((
-                    ButtonBundle {
-                        style: button_style.clone(),
-                        background_color: NORMAL_BUTTON.into(),
-                        border_color: BorderColor(HOVERED_BUTTON),
-                        ..default()
-                    },
-                    ButtonAction::Edit,
-                ))
-                .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section("Edit", button_text_style.clone()));
-                });
+            if matches!(game_kind.get(), GameKind::Puzzle) {
+                parent
+                    .spawn((
+                        ButtonBundle {
+                            style: button_style.clone(),
+                            background_color: NORMAL_BUTTON.into(),
+                            border_color: BorderColor(HOVERED_BUTTON),
+                            ..default()
+                        },
+                        ButtonAction::Edit,
+                    ))
+                    .with_children(|parent| {
+                        parent.spawn(TextBundle::from_section("Edit", button_text_style.clone()));
+                    });
 
-            parent.spawn(
-                TextBundle::from_sections([
-                    TextSection {
-                        value: colliders.coords.len().to_string(),
-                        style: TextStyle {
-                            font_size: 20.,
-                            color: TEXT_COLOR,
-                            font: font.0.clone(),
+                parent.spawn(
+                    TextBundle::from_sections([
+                        TextSection {
+                            value: colliders.coords.len().to_string(),
+                            style: TextStyle {
+                                font_size: 20.,
+                                color: TEXT_COLOR,
+                                font: font.0.clone(),
+                            },
                         },
-                    },
-                    TextSection {
-                        value: " colliders".to_string(),
-                        style: TextStyle {
-                            font_size: 20.,
-                            color: TEXT_COLOR,
-                            font: font.0.clone(),
+                        TextSection {
+                            value: " colliders".to_string(),
+                            style: TextStyle {
+                                font_size: 20.,
+                                color: TEXT_COLOR,
+                                font: font.0.clone(),
+                            },
                         },
-                    },
-                ])
-                .with_style(Style {
-                    margin: UiRect::bottom(Val::Px(10.0)),
-                    ..default()
-                }),
-            );
+                    ])
+                    .with_style(Style {
+                        margin: UiRect::bottom(Val::Px(10.0)),
+                        ..default()
+                    }),
+                );
+            }
             parent.spawn(TextBundle::from_sections([
                 TextSection {
                     value: "120.0".to_string(),

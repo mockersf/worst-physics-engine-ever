@@ -11,6 +11,7 @@ use bevy_rapier2d::prelude::*;
 
 mod aabb_picking_backend;
 mod components;
+mod crash;
 mod edit;
 mod lost;
 mod menu;
@@ -34,8 +35,6 @@ fn main() {
                     }),
                     ..default()
                 }),
-        ))
-        .add_plugins((
             LdtkPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
             DefaultPickingPlugins,
@@ -54,6 +53,7 @@ fn main() {
             edit::EditPlugin,
             play::PlayPlugin,
             menu::MenuPlugin,
+            crash::CrashPlugin,
         ))
         .add_systems(Startup, setup)
         .register_ldtk_int_cell::<components::WallBundle>(1)
@@ -64,7 +64,15 @@ fn main() {
         .register_ldtk_entity::<components::ChestBundle>("Chest")
         .register_ldtk_entity::<components::PumpkinsBundle>("Pumpkins")
         .add_state::<GameMode>()
+        .add_state::<GameKind>()
         .run();
+}
+
+#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+enum GameKind {
+    #[default]
+    Platformer,
+    Puzzle,
 }
 
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone, Copy)]
@@ -75,6 +83,7 @@ enum GameMode {
     Play,
     Won,
     Lost,
+    Crash,
 }
 
 const TEXT_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
