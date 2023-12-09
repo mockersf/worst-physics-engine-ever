@@ -9,7 +9,7 @@ use bevy_rapier2d::plugin::RapierConfiguration;
 use rand::seq::IteratorRandom;
 
 use crate::{
-    components::Wall, FontHandle, GameMode, LevelInfo, HOVERED_BUTTON, NORMAL_BUTTON,
+    components::Wall, CurrentLevel, FontHandle, GameMode, HOVERED_BUTTON, LEVELS, NORMAL_BUTTON,
     PRESSED_BUTTON, TEXT_COLOR,
 };
 
@@ -48,7 +48,7 @@ fn setup_edit_mode(
     mut rapier_config: ResMut<RapierConfiguration>,
     colliders: Res<EnabledColliders>,
     font: Res<FontHandle>,
-    level_info: Res<LevelInfo>,
+    level: Res<CurrentLevel>,
 ) {
     let button_style = Style {
         width: Val::Px(150.0),
@@ -109,7 +109,7 @@ fn setup_edit_mode(
                         },
                     },
                     TextSection {
-                        value: format!(" colliders (max {})", level_info.max_colliders),
+                        value: format!(" colliders (max {})", LEVELS[level.0].max_colliders),
                         style: TextStyle {
                             font_size: 20.,
                             color: TEXT_COLOR,
@@ -216,14 +216,15 @@ fn spawn_wall_aabb(
 fn set_color_based_on_enabled(
     mut query: Query<(&mut ColliderStatus, &mut AabbGizmo, &GridCoords)>,
     mut enabled: ResMut<EnabledColliders>,
-    level_info: Res<LevelInfo>,
+    level: Res<CurrentLevel>,
 ) {
     for (mut collider_status, mut gizmo, gridcoords) in &mut query {
         if collider_status.is_changed() && !collider_status.is_added() {
             if collider_status.enabled {
-                if enabled.coords.len() >= level_info.max_colliders {
+                if enabled.coords.len() >= LEVELS[level.0].max_colliders {
                     collider_status.enabled = false;
                 } else {
+                    debug!("{:?}", gridcoords);
                     gizmo.color = Some(Color::GREEN);
                     enabled.coords.insert(*gridcoords);
                 }
@@ -254,9 +255,9 @@ fn button_system(
     >,
     mut next_state: ResMut<NextState<GameMode>>,
     mut enabled: ResMut<EnabledColliders>,
-    level_info: Res<LevelInfo>,
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
     wall_query: Query<&GridCoords, With<Wall>>,
+    level: Res<CurrentLevel>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
@@ -265,7 +266,7 @@ fn button_system(
                     ButtonAction::Play => next_state.set(GameMode::Play),
                     ButtonAction::Reset => {
                         enabled.coords.clear();
-                        for coord in &level_info.start_colliders {
+                        for coord in &LEVELS[level.0].start_colliders {
                             enabled.coords.insert(*coord);
                         }
                         for world_entity in &world_query {
@@ -274,12 +275,12 @@ fn button_system(
                     }
                     ButtonAction::Random => {
                         enabled.coords.clear();
-                        for coord in &level_info.start_colliders {
+                        for coord in &LEVELS[level.0].start_colliders {
                             enabled.coords.insert(*coord);
                         }
 
                         let mut rng = rand::thread_rng();
-                        while enabled.coords.len() < level_info.max_colliders {
+                        while enabled.coords.len() < LEVELS[level.0].max_colliders {
                             let sample = wall_query.iter().choose(&mut rng).unwrap();
                             enabled.coords.insert(*sample);
                         }

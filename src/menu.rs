@@ -1,9 +1,9 @@
 use bevy::{prelude::*, utils::HashSet};
-use bevy_ecs_ldtk::LdtkWorldBundle;
+use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
 
 use crate::{
-    edit::EnabledColliders, level_1, FontHandle, GameKind, GameMode, LdtkHandle, HOVERED_BUTTON,
-    NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    edit::EnabledColliders, CurrentLevel, FontHandle, GameKind, GameMode, LdtkHandle,
+    HOVERED_BUTTON, LEVELS, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct MenuPlugin;
@@ -103,29 +103,31 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
                     ..default()
                 })
                 .with_children(|parent| {
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: button_style.clone(),
-                                background_color: NORMAL_BUTTON.into(),
-                                border_color: BorderColor(HOVERED_BUTTON),
-                                ..default()
-                            },
-                            ButtonAction::Start,
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle::from_section(
-                                "Start",
-                                button_text_style.clone(),
-                            ));
-                        });
+                    for i in 0..LEVELS.len() {
+                        parent
+                            .spawn((
+                                ButtonBundle {
+                                    style: button_style.clone(),
+                                    background_color: NORMAL_BUTTON.into(),
+                                    border_color: BorderColor(HOVERED_BUTTON),
+                                    ..default()
+                                },
+                                ButtonAction::Start(i),
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn(TextBundle::from_section(
+                                    format!("Level {}", i + 1),
+                                    button_text_style.clone(),
+                                ));
+                            });
+                    }
                 });
         });
 }
 
 #[derive(Component)]
 enum ButtonAction {
-    Start,
+    Start(usize),
 }
 
 #[allow(clippy::type_complexity)]
@@ -143,19 +145,18 @@ fn button_system(
         *color = match *interaction {
             Interaction::Pressed => {
                 match button {
-                    ButtonAction::Start => {
-                        let level = level_1();
+                    ButtonAction::Start(level) => {
                         match game_kind.get() {
                             GameKind::Platformer => next_state.set(GameMode::Play),
                             GameKind::Puzzle => next_state.set(GameMode::Edit),
                         };
                         let mut coords = HashSet::new();
-                        for starter in &level.0.start_colliders {
+                        for starter in &LEVELS[*level].start_colliders {
                             coords.insert(*starter);
                         }
                         commands.insert_resource(EnabledColliders { coords });
-                        commands.insert_resource(level.1);
-                        commands.insert_resource(level.0);
+                        commands.insert_resource(LevelSelection::index(*level));
+                        commands.insert_resource(CurrentLevel(*level));
                         commands.spawn(LdtkWorldBundle {
                             ldtk_handle: world.0.clone(),
                             ..Default::default()

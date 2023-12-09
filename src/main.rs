@@ -108,18 +108,22 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(FontHandle(font));
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct LevelInfo {
-    pub start_colliders: Vec<GridCoords>,
+    pub start_colliders: [GridCoords; 2],
     pub max_colliders: usize,
 }
 
-fn level_1() -> (LevelInfo, LevelSelection) {
-    (
-        LevelInfo {
-            start_colliders: vec![GridCoords::new(5, 5), GridCoords::new(30, 5)],
-            max_colliders: 20,
-        },
-        LevelSelection::Uid(0),
-    )
-}
+const LEVELS: [LevelInfo; 2] = [
+    LevelInfo {
+        start_colliders: [GridCoords { x: 5, y: 5 }, GridCoords { x: 30, y: 5 }],
+        max_colliders: 20,
+    },
+    LevelInfo {
+        start_colliders: [GridCoords { x: 1, y: 16 }, GridCoords { x: 34, y: 1 }],
+        max_colliders: 20,
+    },
+];
+
+#[derive(Resource)]
+struct CurrentLevel(usize);
