@@ -17,6 +17,7 @@ bevy_ecs_ldtk = { version = "0.8", git = "https://github.com/trouv/bevy_ecs_ldtk
 bevy_rapier2d = { version = "0.23" }
 bevy_embedded_assets = "0.9.1"
 bevy_mod_picking = { version = "0.17", default-features = false }
+rand = "0.8"
 
 [patch.crates-io]
 bevy_ecs_tilemap = { git = "https://github.com/divark/bevy_ecs_tilemap", branch = "0.12-fixes" }

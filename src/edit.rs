@@ -6,6 +6,7 @@ use bevy_mod_picking::{
     PickableBundle,
 };
 use bevy_rapier2d::plugin::RapierConfiguration;
+use rand::seq::IteratorRandom;
 
 use crate::{
     components::Wall, FontHandle, GameMode, LevelInfo, HOVERED_BUTTON, NORMAL_BUTTON,
@@ -117,7 +118,7 @@ fn setup_edit_mode(
                     },
                 ])
                 .with_style(Style {
-                    margin: UiRect::bottom(Val::Px(10.0)),
+                    margin: UiRect::bottom(Val::Px(20.0)),
                     ..default()
                 }),
             );
@@ -135,6 +136,22 @@ fn setup_edit_mode(
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section("Reset", button_text_style.clone()));
                 });
+            parent
+                .spawn((
+                    ButtonBundle {
+                        style: button_style.clone(),
+                        background_color: NORMAL_BUTTON.into(),
+                        border_color: BorderColor(HOVERED_BUTTON),
+                        ..default()
+                    },
+                    ButtonAction::Random,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "Random",
+                        button_text_style.clone(),
+                    ));
+                });
         });
 }
 
@@ -142,6 +159,7 @@ fn setup_edit_mode(
 enum ButtonAction {
     Play,
     Reset,
+    Random,
 }
 
 #[derive(Component)]
@@ -238,6 +256,7 @@ fn button_system(
     mut enabled: ResMut<EnabledColliders>,
     level_info: Res<LevelInfo>,
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
+    wall_query: Query<&GridCoords, With<Wall>>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
@@ -249,7 +268,22 @@ fn button_system(
                         for coord in &level_info.start_colliders {
                             enabled.coords.insert(coord.clone());
                         }
-                        next_state.set(GameMode::Edit);
+                        for world_entity in &world_query {
+                            commands.entity(world_entity).insert(Respawn);
+                        }
+                    }
+                    ButtonAction::Random => {
+                        enabled.coords.clear();
+                        for coord in &level_info.start_colliders {
+                            enabled.coords.insert(coord.clone());
+                        }
+
+                        let mut rng = rand::thread_rng();
+                        while enabled.coords.len() < level_info.max_colliders {
+                            let sample = wall_query.iter().choose(&mut rng).unwrap();
+                            enabled.coords.insert(sample.clone());
+                        }
+
                         for world_entity in &world_query {
                             commands.entity(world_entity).insert(Respawn);
                         }
