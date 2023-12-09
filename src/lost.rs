@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 
-use crate::{systems::EnabledColliders, GameMode};
+use crate::GameMode;
 
-pub struct WonPlugin;
+pub struct LostPlugin;
 
-impl Plugin for WonPlugin {
+impl Plugin for LostPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameMode::Won), setup)
-            .add_systems(OnExit(GameMode::Won), exit_screen)
-            .add_systems(Update, button_system.run_if(in_state(GameMode::Won)));
+        app.add_systems(OnEnter(GameMode::Lost), setup)
+            .add_systems(OnExit(GameMode::Lost), exit_screen)
+            .add_systems(Update, button_system.run_if(in_state(GameMode::Lost)));
     }
 }
 
@@ -18,15 +18,15 @@ const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 
 #[derive(Component)]
-struct OnWonScreen;
+struct OnLostScreen;
 
-fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnWonScreen>>) {
+fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnLostScreen>>) {
     for entity in &mut query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
 
-fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
+fn setup(mut commands: Commands) {
     // Common style for all buttons on the screen
     let button_style = Style {
         width: Val::Px(250.0),
@@ -56,14 +56,14 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
                 background_color: Color::rgba(0.3, 0.3, 0.3, 0.5).into(),
                 ..default()
             },
-            OnWonScreen,
+            OnLostScreen,
         ))
         .with_children(|parent| {
             parent.spawn(
                 TextBundle::from_section(
-                    "You won!",
+                    "You lost...",
                     TextStyle {
-                        font_size: 80.0,
+                        font_size: 60.0,
                         color: TEXT_COLOR,
                         ..default()
                     },
@@ -73,20 +73,20 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
                     ..default()
                 }),
             );
-            parent.spawn(
-                TextBundle::from_section(
-                    format!("with {} colliders", colliders.coords.len()),
-                    TextStyle {
-                        font_size: 40.0,
-                        color: TEXT_COLOR,
-                        ..default()
-                    },
-                )
-                .with_style(Style {
-                    margin: UiRect::all(Val::Px(50.0)),
-                    ..default()
-                }),
-            );
+            // parent.spawn(
+            //     TextBundle::from_section(
+            //         format!("with {} colliders", colliders.coords.len()),
+            //         TextStyle {
+            //             font_size: 40.0,
+            //             color: TEXT_COLOR,
+            //             ..default()
+            //         },
+            //     )
+            //     .with_style(Style {
+            //         margin: UiRect::all(Val::Px(50.0)),
+            //         ..default()
+            //     }),
+            // );
             parent
                 .spawn(NodeBundle {
                     style: Style {
@@ -124,6 +124,19 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
                                 button_text_style.clone(),
                             ));
                         });
+                    parent
+                        .spawn((
+                            ButtonBundle {
+                                style: button_style.clone(),
+                                background_color: NORMAL_BUTTON.into(),
+                                ..default()
+                            },
+                            ButtonAction::Edit,
+                        ))
+                        .with_children(|parent| {
+                            parent
+                                .spawn(TextBundle::from_section("Edit", button_text_style.clone()));
+                        });
                 });
         });
 }
@@ -132,6 +145,7 @@ fn setup(mut commands: Commands, colliders: Res<EnabledColliders>) {
 enum ButtonAction {
     Menu,
     Retry,
+    Edit,
 }
 
 #[allow(clippy::type_complexity)]
@@ -146,7 +160,8 @@ fn button_system(
         *color = match *interaction {
             Interaction::Pressed => {
                 match button {
-                    ButtonAction::Retry => next_state.set(GameMode::Edit),
+                    ButtonAction::Edit => next_state.set(GameMode::Edit),
+                    ButtonAction::Retry => next_state.set(GameMode::Play),
                     ButtonAction::Menu => (),
                 }
                 PRESSED_BUTTON.into()

@@ -12,6 +12,7 @@ use systems::EnabledColliders;
 
 mod aabb_picking_backend;
 mod components;
+mod lost;
 mod systems;
 mod won;
 
@@ -47,7 +48,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(EnabledColliders::default())
-        .add_plugins(won::WonPlugin)
+        .add_plugins((won::WonPlugin, lost::LostPlugin))
         .add_systems(Startup, systems::setup)
         .add_systems(
             Update,
@@ -62,6 +63,7 @@ fn main() {
                 systems::patrol,
                 systems::ground_detection,
                 systems::update_on_ground,
+                systems::check_lost_condition,
             )
                 .run_if(in_state(GameMode::Play)),
         )
@@ -100,4 +102,5 @@ enum GameMode {
     Edit,
     Play,
     Won,
+    Lost,
 }

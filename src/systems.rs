@@ -649,3 +649,22 @@ pub fn setup_play_mode(
     }
     rapier_config.gravity = Vec2::new(0.0, -2000.0);
 }
+
+pub fn check_lost_condition(
+    mut next: ResMut<NextState<GameMode>>,
+    chest: Query<&Transform, With<Chest>>,
+    player: Query<&Transform, With<Player>>,
+    respawn: Query<&Respawn>,
+) {
+    if respawn.iter().count() > 0 {
+        return;
+    }
+    let transform = chest.single();
+    if transform.translation.y < -500. {
+        next.set(GameMode::Lost);
+    }
+    let transform = player.single();
+    if transform.translation.y < -500. {
+        next.set(GameMode::Lost);
+    }
+}
