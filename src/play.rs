@@ -112,7 +112,11 @@ fn movement(
             atlas.index = 36;
         }
 
-        if input.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing) {
+        if input.just_pressed(KeyCode::Space)
+            && (ground_detection.on_ground
+                || time.elapsed_seconds() - ground_detection.left_ground < 0.18
+                || climber.climbing)
+        {
             audio_events.send(AudioEvent::Jump);
             velocity.linvel.y = 500.;
             climber.climbing = false;
@@ -530,10 +534,15 @@ fn ground_detection(
 fn update_on_ground(
     mut ground_detectors: Query<&mut GroundDetection>,
     ground_sensors: Query<&GroundSensor, Changed<GroundSensor>>,
+    time: Res<Time>,
 ) {
     for sensor in &ground_sensors {
         if let Ok(mut ground_detection) = ground_detectors.get_mut(sensor.ground_detection_entity) {
-            ground_detection.on_ground = !sensor.intersecting_ground_entities.is_empty();
+            let ground_hit = !sensor.intersecting_ground_entities.is_empty();
+            ground_detection.on_ground = ground_hit;
+            if !ground_hit {
+                ground_detection.left_ground = time.elapsed_seconds();
+            }
         }
     }
 }

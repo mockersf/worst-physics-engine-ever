@@ -232,6 +232,7 @@ pub struct PumpkinsBundle {
 #[derive(Clone, Default, Component)]
 pub struct GroundDetection {
     pub on_ground: bool,
+    pub left_ground: f32,
 }
 
 #[derive(Component)]
