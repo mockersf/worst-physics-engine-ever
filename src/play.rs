@@ -676,13 +676,13 @@ fn check_lost_condition(
         return;
     }
     let transform = chest.single();
-    if transform.translation.y < -500. {
+    if transform.translation.y < 0. {
         audio_events.send(AudioEvent::Fall);
         next.set(GameMode::Lost);
         playthrough.lost_chest = true;
     }
     let transform = player.single();
-    if transform.translation.y < -500. {
+    if transform.translation.y < 0. {
         audio_events.send(AudioEvent::Fall);
         next.set(GameMode::Lost);
         playthrough.lost_player = true;
