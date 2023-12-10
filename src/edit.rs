@@ -9,8 +9,8 @@ use bevy_rapier2d::plugin::RapierConfiguration;
 use rand::seq::IteratorRandom;
 
 use crate::{
-    components::Wall, CurrentLevel, FontHandle, GameMode, HOVERED_BUTTON, LEVELS, NORMAL_BUTTON,
-    PRESSED_BUTTON, TEXT_COLOR,
+    audio::AudioEvent, components::Wall, CurrentLevel, FontHandle, GameMode, HOVERED_BUTTON,
+    LEVELS, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct EditPlugin;
@@ -258,10 +258,12 @@ fn button_system(
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
     wall_query: Query<&GridCoords, With<Wall>>,
     level: Res<CurrentLevel>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
+                audio_events.send(AudioEvent::Click);
                 match button {
                     ButtonAction::Play => next_state.set(GameMode::Play),
                     ButtonAction::Reset => {

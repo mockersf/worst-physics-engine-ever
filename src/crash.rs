@@ -2,7 +2,8 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::assets::LdtkProject;
 
 use crate::{
-    FontHandle, GameKind, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    audio::AudioEvent, FontHandle, GameKind, GameMode, HOVERED_BUTTON, NORMAL_BUTTON,
+    PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct CrashPlugin;
@@ -53,7 +54,9 @@ fn setup(
     mut commands: Commands,
     font: Res<FontHandle>,
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
+    audio_events.send(AudioEvent::Crash);
     commands.entity(world_query.single()).despawn_recursive();
     commands.insert_resource(ClearColor(Color::BLUE));
 
@@ -176,10 +179,12 @@ fn button_system(
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMode>>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
+                audio_events.send(AudioEvent::Click);
                 match button {
                     ButtonAction::Menu => next_state.set(GameMode::Menu),
                 }

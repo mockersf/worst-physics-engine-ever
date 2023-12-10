@@ -1,6 +1,6 @@
 use crate::{
-    components::*, edit::EnabledColliders, FontHandle, GameKind, GameMode, HOVERED_BUTTON,
-    NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    audio::AudioEvent, components::*, edit::EnabledColliders, FontHandle, GameKind, GameMode,
+    HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -71,6 +71,7 @@ fn movement(
         With<Player>,
     >,
     time: Res<Time>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (mut velocity, mut climber, ground_detection, mut atlas) in &mut query {
         let right = if input.pressed(KeyCode::D) { 1. } else { 0. };
@@ -112,6 +113,7 @@ fn movement(
         }
 
         if input.just_pressed(KeyCode::Space) && (ground_detection.on_ground || climber.climbing) {
+            audio_events.send(AudioEvent::Jump);
             velocity.linvel.y = 500.;
             climber.climbing = false;
         }
@@ -272,6 +274,7 @@ fn detect_collision_with_environment(
     player: Query<&Player>,
     chests: Query<&Chest>,
     mut next_state: ResMut<NextState<GameMode>>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for collision in collisions.read() {
         match collision {
@@ -289,6 +292,7 @@ fn detect_collision_with_environment(
                 if (player.contains(*collider_a) && chests.contains(*collider_b))
                     || (player.contains(*collider_b) && chests.contains(*collider_a))
                 {
+                    audio_events.send(AudioEvent::Win);
                     next_state.set(GameMode::Won);
                 }
             }
@@ -364,7 +368,6 @@ pub fn camera_fit_inside_current_level(
     player_query: Query<&Transform, With<Player>>,
     level_query: Query<(&Transform, &LevelIid), (Without<OrthographicProjection>, Without<Player>)>,
     ldtk_projects: Query<&Handle<LdtkProject>>,
-    level_selection: Res<LevelSelection>,
     ldtk_project_assets: Res<Assets<LdtkProject>>,
     window: Query<&Window>,
 ) {
@@ -670,17 +673,20 @@ fn check_lost_condition(
     time: Res<Time>,
     mut playthrough: ResMut<Playthrough>,
     mut text: Query<&mut Text>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     if respawn.iter().count() > 0 {
         return;
     }
     let transform = chest.single();
     if transform.translation.y < -500. {
+        audio_events.send(AudioEvent::Fall);
         next.set(GameMode::Lost);
         playthrough.lost_chest = true;
     }
     let transform = player.single();
     if transform.translation.y < -500. {
+        audio_events.send(AudioEvent::Fall);
         next.set(GameMode::Lost);
         playthrough.lost_player = true;
     }
@@ -704,10 +710,12 @@ fn button_system(
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMode>>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
+                audio_events.send(AudioEvent::Click);
                 match button {
                     ButtonAction::Edit => next_state.set(GameMode::Edit),
                 }

@@ -10,6 +10,7 @@ use bevy_mod_picking::DefaultPickingPlugins;
 use bevy_rapier2d::prelude::*;
 
 mod aabb_picking_backend;
+mod audio;
 mod components;
 mod crash;
 mod edit;
@@ -29,7 +30,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Worst Physics Engine Ever".to_string(),
-                        resolution: WindowResolution::new(1152.0, 640.0),
+                        // resolution: WindowResolution::new(1140.0, 640.0),
                         fit_canvas_to_parent: true,
                         ..default()
                     }),
@@ -54,6 +55,7 @@ fn main() {
             play::PlayPlugin,
             menu::MenuPlugin,
             crash::CrashPlugin,
+            audio::AudioPlugin,
         ))
         .add_systems(Startup, setup)
         .register_ldtk_int_cell::<components::WallBundle>(1)

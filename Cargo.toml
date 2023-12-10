@@ -12,6 +12,7 @@ bevy = { version = "0.12", default-features = false, features = [
     "png",
     "bevy_winit",
     "bevy_ui",
+    "vorbis",
 ] }
 bevy_ecs_ldtk = { version = "0.8", git = "https://github.com/trouv/bevy_ecs_ldtk", branch = "feat/bevy-0.12" }
 bevy_rapier2d = { version = "0.23" }

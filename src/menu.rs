@@ -4,8 +4,9 @@ use bevy::{prelude::*, utils::HashSet};
 use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
 
 use crate::{
-    edit::EnabledColliders, CurrentLevel, FontHandle, GameKind, GameMode, LdtkHandle, Progression,
-    DISABLED_BUTTON, HOVERED_BUTTON, LEVELS, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    audio::AudioEvent, edit::EnabledColliders, CurrentLevel, FontHandle, GameKind, GameMode,
+    LdtkHandle, Progression, DISABLED_BUTTON, HOVERED_BUTTON, LEVELS, NORMAL_BUTTON,
+    PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct MenuPlugin;
@@ -185,10 +186,12 @@ fn button_system(
     mut next_state: ResMut<NextState<GameMode>>,
     world: Res<LdtkHandle>,
     game_kind: Res<State<GameKind>>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
+                audio_events.send(AudioEvent::Click);
                 match button {
                     ButtonAction::Start(level) => {
                         match game_kind.get() {

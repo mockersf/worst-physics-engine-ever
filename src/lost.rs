@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::assets::LdtkProject;
 
 use crate::{
-    play::Playthrough, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
-    TEXT_COLOR,
+    audio::AudioEvent, play::Playthrough, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON,
+    PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct LostPlugin;
@@ -167,10 +167,12 @@ fn button_system(
     >,
     mut next_state: ResMut<NextState<GameMode>>,
     world_query: Query<Entity, With<Handle<LdtkProject>>>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (interaction, mut color, button) in &mut interaction_query {
         *color = match *interaction {
             Interaction::Pressed => {
+                audio_events.send(AudioEvent::Click);
                 match button {
                     ButtonAction::Edit => next_state.set(GameMode::Edit),
                     ButtonAction::Retry => next_state.set(GameMode::Play),
