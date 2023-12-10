@@ -671,6 +671,7 @@ enum ButtonAction {
     Edit,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn check_lost_condition(
     mut next: ResMut<NextState<GameMode>>,
     chest: Query<&Transform, With<Chest>>,

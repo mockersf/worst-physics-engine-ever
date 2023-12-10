@@ -250,7 +250,7 @@ fn update_collider_count(colliders: Res<EnabledColliders>, mut text: Query<&mut 
     }
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
 fn button_system(
     mut commands: Commands,
     mut interaction_query: Query<
