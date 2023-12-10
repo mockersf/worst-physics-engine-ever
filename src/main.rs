@@ -1,8 +1,5 @@
-// This example shows off a more in-depth implementation of a game with `bevy_ecs_ldtk`.
-// Please run with `--release`.
-
 use aabb_picking_backend::AabbPickingBackend;
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::prelude::*;
 
 use bevy_ecs_ldtk::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
@@ -30,7 +27,6 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Worst Physics Engine Ever".to_string(),
-                        // resolution: WindowResolution::new(1140.0, 640.0),
                         fit_canvas_to_parent: true,
                         ..default()
                     }),
