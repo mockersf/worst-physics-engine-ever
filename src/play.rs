@@ -625,7 +625,7 @@ fn setup_play_mode(
             }
             parent.spawn(TextBundle::from_sections([
                 TextSection {
-                    value: "120.0".to_string(),
+                    value: "60.0".to_string(),
                     style: TextStyle {
                         font_size: 20.,
                         color: Color::GREEN,
@@ -644,7 +644,7 @@ fn setup_play_mode(
         });
 
     commands.insert_resource(Playthrough {
-        timer: Timer::from_seconds(120.0, TimerMode::Once),
+        timer: Timer::from_seconds(60.0, TimerMode::Once),
         lost_chest: false,
         lost_player: false,
     });
@@ -690,7 +690,7 @@ fn check_lost_condition(
     for mut text in &mut text {
         if text.sections[0].style.color != TEXT_COLOR {
             text.sections[0].value = format!("{:.1}", playthrough.timer.remaining_secs());
-            if playthrough.timer.remaining_secs() < 30.0 {
+            if playthrough.timer.remaining_secs() < 20.0 {
                 text.sections[0].style.color = Color::RED;
             }
         }
