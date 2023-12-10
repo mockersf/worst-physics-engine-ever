@@ -44,3 +44,4 @@ lto = true
 [features]
 default = []
 release = []
+debug = []

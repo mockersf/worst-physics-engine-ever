@@ -70,8 +70,9 @@ fn main() {
 
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone, Copy)]
 enum GameKind {
-    #[default]
+    #[cfg_attr(not(feature = "debug"), default)]
     Platformer,
+    #[cfg_attr(feature = "debug", default)]
     Puzzle,
 }
 
@@ -108,9 +109,20 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("PublicPixel-z84yD.ttf");
     commands.insert_resource(FontHandle(font));
 
-    commands.insert_resource(Progression {
-        levels: vec![usize::MAX; LEVELS.len()],
-    });
+    #[cfg(not(feature = "debug"))]
+    let levels = vec![usize::MAX; LEVELS.len()];
+    #[cfg(feature = "debug")]
+    let levels = {
+        use rand::Rng;
+        let mut levels = vec![];
+        let mut rng = rand::thread_rng();
+        for i in 0..LEVELS.len() {
+            levels.push(rng.gen_range(0..3));
+        }
+        levels
+    };
+
+    commands.insert_resource(Progression { levels });
 }
 
 #[derive(Resource, Clone)]
