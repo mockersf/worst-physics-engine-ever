@@ -130,7 +130,7 @@ pub struct LevelInfo {
     pub max_colliders: usize,
 }
 
-const LEVELS: [LevelInfo; 3] = [
+const LEVELS: [LevelInfo; 6] = [
     LevelInfo {
         start_colliders: [GridCoords { x: 5, y: 5 }, GridCoords { x: 30, y: 5 }],
         thresholds: [5, 8, 10],
@@ -139,6 +139,21 @@ const LEVELS: [LevelInfo; 3] = [
     LevelInfo {
         start_colliders: [GridCoords { x: 5, y: 5 }, GridCoords { x: 30, y: 5 }],
         thresholds: [5, 8, 10],
+        max_colliders: 20,
+    },
+    LevelInfo {
+        start_colliders: [GridCoords { x: 5, y: 5 }, GridCoords { x: 30, y: 5 }],
+        thresholds: [5, 8, 10],
+        max_colliders: 20,
+    },
+    LevelInfo {
+        start_colliders: [GridCoords { x: 5, y: 5 }, GridCoords { x: 30, y: 5 }],
+        thresholds: [5, 8, 10],
+        max_colliders: 20,
+    },
+    LevelInfo {
+        start_colliders: [GridCoords { x: 1, y: 15 }, GridCoords { x: 34, y: 1 }],
+        thresholds: [7, 10, 13],
         max_colliders: 20,
     },
     LevelInfo {

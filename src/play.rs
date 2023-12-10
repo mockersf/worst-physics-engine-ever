@@ -51,10 +51,10 @@ fn exit_mode(
     player.single_mut().linvel = Vec2::ZERO;
 }
 
-fn freeze(mut player: Query<&mut Velocity, With<Player>>) {
-    if let Ok(mut player) = player.get_single_mut() {
-        if player.is_changed() {
-            player.linvel = Vec2::ZERO;
+fn freeze(mut moving: Query<&mut Velocity>) {
+    for mut velocity in &mut moving {
+        if velocity.is_changed() {
+            velocity.linvel = Vec2::ZERO;
         }
     }
 }
@@ -277,8 +277,10 @@ fn detect_collision_with_environment(
     mut collisions: EventReader<CollisionEvent>,
     player: Query<&Player>,
     chests: Query<&Chest>,
+    ennemy: Query<&Patrol>,
     mut next_state: ResMut<NextState<GameMode>>,
     mut audio_events: EventWriter<AudioEvent>,
+    mut playthrough: ResMut<Playthrough>,
 ) {
     for collision in collisions.read() {
         match collision {
@@ -298,6 +300,13 @@ fn detect_collision_with_environment(
                 {
                     audio_events.send(AudioEvent::Win);
                     next_state.set(GameMode::Won);
+                }
+                if (player.contains(*collider_a) && ennemy.contains(*collider_b))
+                    || (player.contains(*collider_b) && ennemy.contains(*collider_a))
+                {
+                    audio_events.send(AudioEvent::Eagle);
+                    playthrough.enemy_hit = true;
+                    next_state.set(GameMode::Lost);
                 }
             }
             CollisionEvent::Stopped(collider_a, collider_b, _) => {
@@ -327,8 +336,17 @@ fn ignore_gravity_if_climbing(mut query: Query<(&Climber, &mut GravityScale), Ch
     }
 }
 
-fn patrol(mut query: Query<(&mut Transform, &mut Velocity, &mut Patrol)>) {
-    for (mut transform, mut velocity, mut patrol) in &mut query {
+fn patrol(
+    mut query: Query<(
+        &mut Transform,
+        &mut Velocity,
+        &mut Patrol,
+        &mut TextureAtlasSprite,
+    )>,
+    time: Res<Time>,
+) {
+    for (mut transform, mut velocity, mut patrol, mut sprite) in &mut query {
+        sprite.index = ((time.elapsed_seconds() * 5.0).floor() as usize) % 4;
         if patrol.points.len() <= 1 {
             continue;
         }
@@ -656,6 +674,7 @@ fn setup_play_mode(
         timer: Timer::from_seconds(60.0, TimerMode::Once),
         lost_chest: false,
         lost_player: false,
+        enemy_hit: false,
     });
 }
 
@@ -664,6 +683,7 @@ pub struct Playthrough {
     pub timer: Timer,
     pub lost_player: bool,
     pub lost_chest: bool,
+    pub enemy_hit: bool,
 }
 
 #[derive(Component)]

@@ -20,6 +20,7 @@ pub enum AudioEvent {
     AddCollider,
     RemoveCollider,
     FailedCollider,
+    Eagle,
 }
 
 #[derive(Resource)]
@@ -32,6 +33,7 @@ struct AudioHandles {
     add_collider: Handle<AudioSource>,
     remove_collider: Handle<AudioSource>,
     failed_collider: Handle<AudioSource>,
+    eagle: Handle<AudioSource>,
 }
 
 fn load_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -44,6 +46,7 @@ fn load_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
         add_collider: asset_server.load("add.ogg"),
         remove_collider: asset_server.load("remove.ogg"),
         failed_collider: asset_server.load("failed.ogg"),
+        eagle: asset_server.load("eagle.ogg"),
     });
 }
 
@@ -100,6 +103,12 @@ fn play_audio(
             AudioEvent::FailedCollider => {
                 commands.spawn(AudioBundle {
                     source: handles.failed_collider.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
+            }
+            AudioEvent::Eagle => {
+                commands.spawn(AudioBundle {
+                    source: handles.eagle.clone(),
                     settings: PlaybackSettings::DESPAWN,
                 });
             }

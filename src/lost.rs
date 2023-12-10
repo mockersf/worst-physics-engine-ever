@@ -79,6 +79,8 @@ fn setup(mut commands: Commands, playthrough: Res<Playthrough>, font: Res<FontHa
                         "Those nice pancakes fell..."
                     } else if playthrough.lost_player {
                         "You fell!"
+                    } else if playthrough.enemy_hit {
+                        "That eagle found a nice snack..."
                     } else {
                         "You're out of time!"
                     },

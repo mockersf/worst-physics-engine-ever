@@ -112,6 +112,8 @@ fn setup(
                 .spawn(NodeBundle {
                     style: Style {
                         flex_direction: FlexDirection::Row,
+                        max_width: Val::Percent(80.0),
+                        flex_wrap: FlexWrap::Wrap,
                         ..default()
                     },
                     ..default()

@@ -44,6 +44,7 @@ impl From<&EntityInstance> for ColliderBundle {
                 collider: Collider::cuboid(5., 5.),
                 rigid_body: RigidBody::KinematicVelocityBased,
                 rotation_constraints,
+                active_events: ActiveEvents::COLLISION_EVENTS,
                 ..Default::default()
             },
             "Chest" => ColliderBundle {
