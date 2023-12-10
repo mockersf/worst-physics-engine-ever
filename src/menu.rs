@@ -1,9 +1,11 @@
+use std::f32::consts::FRAC_PI_3;
+
 use bevy::{prelude::*, utils::HashSet};
 use bevy_ecs_ldtk::{LdtkWorldBundle, LevelSelection};
 
 use crate::{
-    edit::EnabledColliders, CurrentLevel, FontHandle, GameKind, GameMode, LdtkHandle,
-    HOVERED_BUTTON, LEVELS, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
+    edit::EnabledColliders, CurrentLevel, FontHandle, GameKind, GameMode, LdtkHandle, Progression,
+    DISABLED_BUTTON, HOVERED_BUTTON, LEVELS, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct MenuPlugin;
@@ -25,7 +27,13 @@ fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnMenuScreen>>)
     }
 }
 
-fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<GameKind>>) {
+fn setup(
+    mut commands: Commands,
+    font: Res<FontHandle>,
+    game_kind: Res<State<GameKind>>,
+    progression: Res<Progression>,
+    asset_server: Res<AssetServer>,
+) {
     commands.insert_resource(ClearColor(Color::BLACK));
 
     // Common style for all buttons on the screen
@@ -41,6 +49,11 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
     let button_text_style = TextStyle {
         font_size: 30.0,
         color: TEXT_COLOR,
+        font: font.0.clone(),
+    };
+    let disabled_button_text_style = TextStyle {
+        font_size: 30.0,
+        color: TEXT_COLOR * 0.5,
         font: font.0.clone(),
     };
 
@@ -104,22 +117,54 @@ fn setup(mut commands: Commands, font: Res<FontHandle>, game_kind: Res<State<Gam
                 })
                 .with_children(|parent| {
                     for i in 0..LEVELS.len() {
-                        parent
-                            .spawn((
-                                ButtonBundle {
-                                    style: button_style.clone(),
-                                    background_color: NORMAL_BUTTON.into(),
-                                    border_color: BorderColor(HOVERED_BUTTON),
-                                    ..default()
+                        let enabled = i == 0 || progression.levels[i - 1] != usize::MAX;
+                        let mut button = parent.spawn(ButtonBundle {
+                            style: button_style.clone(),
+                            background_color: if enabled {
+                                NORMAL_BUTTON.into()
+                            } else {
+                                DISABLED_BUTTON.into()
+                            },
+                            border_color: BorderColor(HOVERED_BUTTON),
+                            ..default()
+                        });
+                        button.with_children(|parent| {
+                            parent.spawn(TextBundle::from_section(
+                                format!("Level {}", i + 1),
+                                if enabled {
+                                    button_text_style.clone()
+                                } else {
+                                    disabled_button_text_style.clone()
                                 },
-                                ButtonAction::Start(i),
-                            ))
-                            .with_children(|parent| {
-                                parent.spawn(TextBundle::from_section(
-                                    format!("Level {}", i + 1),
-                                    button_text_style.clone(),
-                                ));
-                            });
+                            ));
+                            if progression.levels[i] < 3 {
+                                parent.spawn(ImageBundle {
+                                    style: Style {
+                                        position_type: PositionType::Absolute,
+                                        right: Val::Px(-8.0),
+                                        top: Val::Px(-8.0),
+                                        width: Val::Px(25.0),
+                                        height: Val::Px(25.0),
+                                        ..default()
+                                    },
+                                    image: UiImage::new(asset_server.load(
+                                        match progression.levels[i] {
+                                            0 => "starGold.png",
+                                            1 => "starSilver.png",
+                                            2 => "starBronze.png",
+                                            _ => unreachable!(),
+                                        },
+                                    )),
+                                    transform: Transform::from_rotation(Quat::from_rotation_z(
+                                        -FRAC_PI_3,
+                                    )),
+                                    ..default()
+                                });
+                            }
+                        });
+                        if enabled {
+                            button.insert(ButtonAction::Start(i));
+                        }
                     }
                 });
         });

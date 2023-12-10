@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::assets::LdtkProject;
 
 use crate::{
-    edit::EnabledColliders, FontHandle, GameMode, HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON,
-    TEXT_COLOR,
+    edit::EnabledColliders, CurrentLevel, FontHandle, GameMode, Progression, HOVERED_BUTTON,
+    LEVELS, NORMAL_BUTTON, PRESSED_BUTTON, TEXT_COLOR,
 };
 
 pub struct WonPlugin;
@@ -25,7 +25,19 @@ fn exit_screen(mut commands: Commands, query: Query<Entity, With<OnWonScreen>>) 
     }
 }
 
-fn setup(mut commands: Commands, colliders: Res<EnabledColliders>, font: Res<FontHandle>) {
+fn setup(
+    mut commands: Commands,
+    colliders: Res<EnabledColliders>,
+    font: Res<FontHandle>,
+    mut progression: ResMut<Progression>,
+    level: Res<CurrentLevel>,
+) {
+    progression.levels[level.0] = LEVELS[level.0]
+        .thresholds
+        .binary_search(&colliders.coords.len())
+        .map_or_else(|err| err, |ok| ok)
+        .min(progression.levels[level.0]);
+
     // Common style for all buttons on the screen
     let button_style = Style {
         width: Val::Px(250.0),

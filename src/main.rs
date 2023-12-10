@@ -90,6 +90,7 @@ const TEXT_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+const DISABLED_BUTTON: Color = Color::rgb(0.1, 0.1, 0.1);
 
 #[derive(Resource)]
 pub struct FontHandle(Handle<Font>);
@@ -106,24 +107,36 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let font = asset_server.load("PublicPixel-z84yD.ttf");
     commands.insert_resource(FontHandle(font));
+
+    commands.insert_resource(Progression {
+        levels: vec![usize::MAX; LEVELS.len()],
+    });
 }
 
 #[derive(Resource, Clone)]
 pub struct LevelInfo {
     pub start_colliders: [GridCoords; 2],
+    pub thresholds: [usize; 3],
     pub max_colliders: usize,
 }
 
 const LEVELS: [LevelInfo; 2] = [
     LevelInfo {
         start_colliders: [GridCoords { x: 5, y: 5 }, GridCoords { x: 30, y: 5 }],
+        thresholds: [5, 8, 10],
         max_colliders: 20,
     },
     LevelInfo {
         start_colliders: [GridCoords { x: 1, y: 16 }, GridCoords { x: 34, y: 1 }],
+        thresholds: [7, 10, 13],
         max_colliders: 20,
     },
 ];
 
 #[derive(Resource)]
 struct CurrentLevel(usize);
+
+#[derive(Resource)]
+pub struct Progression {
+    pub levels: Vec<usize>,
+}
