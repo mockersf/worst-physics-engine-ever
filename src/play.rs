@@ -271,6 +271,7 @@ fn spawn_complete_wall_collision(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn detect_collision_with_environment(
     mut climbers: Query<&mut Climber>,
     climbables: Query<Entity, With<Climbable>>,
