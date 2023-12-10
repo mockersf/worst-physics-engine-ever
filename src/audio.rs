@@ -17,6 +17,9 @@ pub enum AudioEvent {
     Fall,
     Win,
     Crash,
+    AddCollider,
+    RemoveCollider,
+    FailedCollider,
 }
 
 #[derive(Resource)]
@@ -26,6 +29,9 @@ struct AudioHandles {
     fall: Handle<AudioSource>,
     win: Handle<AudioSource>,
     crash: Handle<AudioSource>,
+    add_collider: Handle<AudioSource>,
+    remove_collider: Handle<AudioSource>,
+    failed_collider: Handle<AudioSource>,
 }
 
 fn load_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -35,6 +41,9 @@ fn load_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
         fall: asset_server.load("fall.ogg"),
         win: asset_server.load("win.ogg"),
         crash: asset_server.load("crash.ogg"),
+        add_collider: asset_server.load("add.ogg"),
+        remove_collider: asset_server.load("remove.ogg"),
+        failed_collider: asset_server.load("failed.ogg"),
     });
 }
 
@@ -73,6 +82,24 @@ fn play_audio(
             AudioEvent::Crash => {
                 commands.spawn(AudioBundle {
                     source: handles.crash.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
+            }
+            AudioEvent::AddCollider => {
+                commands.spawn(AudioBundle {
+                    source: handles.add_collider.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
+            }
+            AudioEvent::RemoveCollider => {
+                commands.spawn(AudioBundle {
+                    source: handles.remove_collider.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
+            }
+            AudioEvent::FailedCollider => {
+                commands.spawn(AudioBundle {
+                    source: handles.failed_collider.clone(),
                     settings: PlaybackSettings::DESPAWN,
                 });
             }

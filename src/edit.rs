@@ -217,20 +217,24 @@ fn set_color_based_on_enabled(
     mut query: Query<(&mut ColliderStatus, &mut AabbGizmo, &GridCoords)>,
     mut enabled: ResMut<EnabledColliders>,
     level: Res<CurrentLevel>,
+    mut audio_events: EventWriter<AudioEvent>,
 ) {
     for (mut collider_status, mut gizmo, gridcoords) in &mut query {
         if collider_status.is_changed() && !collider_status.is_added() {
             if collider_status.enabled {
                 if enabled.coords.len() >= LEVELS[level.0].max_colliders {
                     collider_status.enabled = false;
+                    audio_events.send(AudioEvent::FailedCollider);
                 } else {
                     debug!("{:?}", gridcoords);
                     gizmo.color = Some(Color::GREEN);
                     enabled.coords.insert(*gridcoords);
+                    audio_events.send(AudioEvent::AddCollider);
                 }
             } else {
                 gizmo.color = Some(Color::GRAY);
                 enabled.coords.remove(gridcoords);
+                audio_events.send(AudioEvent::RemoveCollider);
             }
         }
     }
