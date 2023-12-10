@@ -114,7 +114,7 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         use rand::Rng;
         let mut levels = vec![];
         let mut rng = rand::thread_rng();
-        for i in 0..LEVELS.len() {
+        for _ in 0..LEVELS.len() {
             levels.push(rng.gen_range(0..3));
         }
         levels
