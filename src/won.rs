@@ -31,6 +31,7 @@ fn setup(
     font: Res<FontHandle>,
     mut progression: ResMut<Progression>,
     level: Res<CurrentLevel>,
+    asset_server: Res<AssetServer>,
 ) {
     progression.levels[level.0] = LEVELS[level.0]
         .thresholds
@@ -99,6 +100,101 @@ fn setup(
                     ..default()
                 }),
             );
+
+            let percent = (colliders.coords.len() as f32 - LEVELS[level.0].max_colliders as f32)
+                .abs()
+                / (LEVELS[level.0].max_colliders as f32 - LEVELS[level.0].thresholds[0] as f32);
+            let gold =
+                (LEVELS[level.0].thresholds[0] as f32 - LEVELS[level.0].max_colliders as f32).abs()
+                    / (LEVELS[level.0].max_colliders as f32 - LEVELS[level.0].thresholds[0] as f32);
+            let silver =
+                (LEVELS[level.0].thresholds[1] as f32 - LEVELS[level.0].max_colliders as f32).abs()
+                    / (LEVELS[level.0].max_colliders as f32 - LEVELS[level.0].thresholds[0] as f32);
+            let bronze =
+                (LEVELS[level.0].thresholds[2] as f32 - LEVELS[level.0].max_colliders as f32).abs()
+                    / (LEVELS[level.0].max_colliders as f32 - LEVELS[level.0].thresholds[0] as f32);
+            parent
+                .spawn(NodeBundle {
+                    style: Style {
+                        flex_direction: FlexDirection::Row,
+                        width: Val::Px(500.0),
+                        height: Val::Px(50.0),
+                        ..default()
+                    },
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn(NodeBundle {
+                        style: Style {
+                            width: Val::Percent(percent * 100.0),
+                            height: Val::Px(30.0),
+                            ..default()
+                        },
+                        background_color: Color::rgb(0.0, 1.0, 0.0).into(),
+                        ..default()
+                    });
+                    parent.spawn(NodeBundle {
+                        style: Style {
+                            width: Val::Percent((1.0 - percent) * 100.0),
+                            height: Val::Px(30.0),
+                            ..default()
+                        },
+                        background_color: Color::rgb(0.0, 0.0, 0.0).into(),
+                        ..default()
+                    });
+                    parent.spawn(ImageBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            left: Val::Percent(bronze * 100.0 - 2.5),
+                            top: Val::Px(-15.0),
+                            width: Val::Px(25.0),
+                            height: Val::Px(25.0),
+                            ..default()
+                        },
+                        image: UiImage::new(asset_server.load("starBronze.png")),
+                        background_color: BackgroundColor(if progression.levels[level.0] < 3 {
+                            Color::WHITE
+                        } else {
+                            Color::GRAY
+                        }),
+                        ..default()
+                    });
+                    parent.spawn(ImageBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            left: Val::Percent(silver * 100.0 - 2.5),
+                            top: Val::Px(-15.0),
+                            width: Val::Px(25.0),
+                            height: Val::Px(25.0),
+                            ..default()
+                        },
+                        image: UiImage::new(asset_server.load("starSilver.png")),
+                        background_color: BackgroundColor(if progression.levels[level.0] < 2 {
+                            Color::WHITE
+                        } else {
+                            Color::GRAY
+                        }),
+                        ..default()
+                    });
+                    parent.spawn(ImageBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            left: Val::Percent(gold * 100.0 - 2.5),
+                            top: Val::Px(-15.0),
+                            width: Val::Px(25.0),
+                            height: Val::Px(25.0),
+                            ..default()
+                        },
+                        image: UiImage::new(asset_server.load("starGold.png")),
+                        background_color: BackgroundColor(if progression.levels[level.0] < 1 {
+                            Color::WHITE
+                        } else {
+                            Color::GRAY
+                        }),
+                        ..default()
+                    });
+                });
+
             parent
                 .spawn(NodeBundle {
                     style: Style {
